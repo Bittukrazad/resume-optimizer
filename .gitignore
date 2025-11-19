@@ -1,0 +1,22 @@
+# Secrets
+.streamlit/secrets.toml
+.env
+
+# Virtual Environment
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Models
+model_cache/
+
+# Logs
+*.log
