@@ -1,3 +1,9 @@
+# Pre-download model to avoid silent hang during deploy
+print("📥 Pre-downloading sentence-transformers model...")
+from sentence_transformers import SentenceTransformer
+SentenceTransformer('all-MiniLM-L6-v2', cache_folder="./model_cache")
+print("✅ Model cached!")
+
 import streamlit as st
 import time
 import io
