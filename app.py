@@ -102,46 +102,32 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
         - 📥 PDF report + ATS template  
         """)
         
-        # ✅ Razorpay Standard Checkout (Pre-filled ₹5)
-        # 🔐 Razorpay Payment Verification (Auto-unlock)
-payment_id = st.query_params.get("payment_id")
-
-# No need for hash parsing — Razorpay now uses ?payment_id= in redirect
-if payment_id and not st.session_state.payment_confirmed:
-    with st.spinner("✅ Verifying payment with Razorpay..."):
-        try:
-            # Use secrets for live mode, fallback to test keys
-            try:
-                RAZORPAY_KEY = st.secrets["razorpay"]["RAZORPAY_KEY"]
-                RAZORPAY_SECRET = st.secrets["razorpay"]["RAZORPAY_SECRET"]
-            except:
-                RAZORPAY_KEY = "rzp_test_00000000000000"
-                RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"
-            
-            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
-            
-            # Fetch and verify payment
-            payment = client.payment.fetch(payment_id)
-            
-            if payment["status"] == "captured" and payment["amount"] == 500:
-                st.session_state.payment_confirmed = True
-                st.session_state.paid_users += 1
-                st.success("🎉 ₹5 payment verified! Generating your full report...")
-                st.rerun()
-            else:
-                st.error(f"❌ Payment not captured or wrong amount (₹{payment['amount']/100})")
-                st.info("ℹ️ Use test card `4111 1111 1111 1111` for ₹5")
-                
-        except Exception as e:
-            error_msg = str(e)
-            if "404" in error_msg:
-                st.error("⚠️ Invalid payment ID — try paying again")
-            elif "authentication" in error_msg.lower():
-                st.error("🔐 Razorpay keys misconfigured — check Streamlit secrets")
-            else:
-                st.error(f"⚠️ Verification failed: {error_msg}")
-            st.info("💡 Refresh page and try payment again")
-
+       # ✅ Razorpay Standard Checkout (Pre-filled ₹5)
+        st.markdown(f"""
+        <a href="https://rzp.io/rzp/v6xOQu0?amount=500&currency=INR&notes[service]=resume_report"
+           style="
+             display: inline-block;
+             background: #2563eb;
+             color: white;
+             padding: 12px 24px;
+             border-radius: 8px;
+             font-weight: bold;
+             text-decoration: none;
+             width: 100%;
+             text-align: center;
+           ">
+           💳 Pay ₹5 via Razorpay
+        </a>
+        <script>
+        // Auto-redirect after payment
+        const urlParams = new URLSearchParams(window.location.search);
+        const payment_id = urlParams.get('payment_id');
+        if (payment_id) {{
+            window.parent.location.href = window.parent.location.pathname + '?payment_id=' + payment_id;
+        }}
+        </script>
+        """, unsafe_allow_html=True)
+        
 # 🎉 Post-payment: Full Report
 if st.session_state.payment_confirmed:
     # 🔗 ANCHOR FOR SCROLL
@@ -365,58 +351,27 @@ elif page == "Contact Us":
     Response time: within 24–48 hours.
     """)
 
-    # 🔐 Razorpay Payment Verification (Auto-unlock)
+   # 🔐 Razorpay Payment Verification (Auto-unlock)
 payment_id = st.query_params.get("payment_id")
-
-# Also check URL fragment (for QR/UPI payments where payment_id is in #hash)
-if not payment_id:
-    from urllib.parse import urlparse
-    import re
-    # Get full URL (Streamlit doesn't expose hash directly)
-    url_params = st.experimental_get_query_params()
-    if "url" in url_params:
-        full_url = url_params["url"][0]
-        match = re.search(r"[?&#]payment_id=([a-zA-Z0-9_]+)", full_url)
-        if match:
-            payment_id = match.group(1)
-
 if payment_id and not st.session_state.payment_confirmed:
     with st.spinner("✅ Verifying payment with Razorpay..."):
         try:
-            # Use secrets for live mode, fallback to test keys
-            try:
-                RAZORPAY_KEY = st.secrets["razorpay"]["RAZORPAY_KEY"]
-                RAZORPAY_SECRET = st.secrets["razorpay"]["RAZORPAY_SECRET"]
-            except:
-                RAZORPAY_KEY = "rzp_test_00000000000000"
-                RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"
-            
+            # Initialize client (safe with test keys)
+            RAZORPAY_KEY = "rzp_test_00000000000000"  # Public test key (safe to commit)
+            RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"     # Dummy (not used in client-side verify)
             client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
             
-            # Fetch and verify payment
+            # Verify payment
             payment = client.payment.fetch(payment_id)
-            
-            # Log for debugging (safe — no sensitive data)
-            print(f"Payment fetched: ID={payment_id}, Status={payment['status']}, Amount={payment['amount']}")
-            
             if payment["status"] == "captured" and payment["amount"] == 500:
                 st.session_state.payment_confirmed = True
                 st.session_state.paid_users += 1
                 st.success("🎉 ₹5 payment verified! Generating your full report...")
                 st.rerun()
             else:
-                st.error(f"❌ Payment not captured or wrong amount (₹{payment['amount']/100})")
-                st.info("ℹ️ Use test card `4111 1111 1111 1111` for ₹5")
-                
+                st.error(f"❌ Payment failed: {payment['status']}")
         except Exception as e:
-            error_msg = str(e)
-            if "404" in error_msg:
-                st.error("⚠️ Invalid payment ID — try paying again")
-            elif "authentication" in error_msg.lower():
-                st.error("🔐 Razorpay keys misconfigured — contact admin")
-            else:
-                st.error(f"⚠️ Verification failed: {error_msg}")
-            st.info("💡 Refresh page and try payment again")
+            st.error(f"⚠️ Verification failed: {e}")
            
 
 # 📝 Footer
