@@ -240,6 +240,24 @@ if st.sidebar.checkbox("🔐 Admin"):
             for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result"]:
                 st.session_state.pop(key, None)
             st.sidebar.success("✅ Stats reset!")
+            
+            # 🎯 Auto-verify payment and unlock report
+payment_id = st.query_params.get("payment_id")
+if payment_id and not st.session_state.payment_confirmed:
+    with st.spinner("Verifying payment..."):
+        try:
+            # Use Razorpay client to verify
+            payment = client.payment.fetch(payment_id)
+            if payment["status"] == "captured" and payment["amount"] == 500:
+                st.session_state.payment_confirmed = True
+                st.session_state.reports_generated += 1
+                st.success("✅ Payment verified! Generating your report...")
+                st.rerun()
+            else:
+                st.error("❌ Payment failed or amount mismatch.")
+        except Exception as e:
+            st.error(f"Verification error: {e}")
+            
  # ================== LEGAL PAGES ==================
 
 st.sidebar.markdown("### 📘 Legal & Support")
