@@ -49,14 +49,19 @@ if "payment_confirmed" not in st.session_state:
 
 # 🔐 Check for payment verification on page load
 payment_id = st.query_params.get("payment_id")
-if payment_id and not st.session_state.payment_confirmed:
+verified_flag = st.query_params.get("verified")
+
+if payment_id and verified_flag == "true" and not st.session_state.payment_confirmed:
     # Check if we have analysis result before verifying payment
     if "last_result" not in st.session_state:
-        st.error("⚠️ Analysis data not found. Please analyze your resume again and then make payment.")
+        st.warning("⚠️ Analysis data not found in current session.")
+        st.info("💡 **This can happen if:**\n- You opened the payment link in a new tab/window\n- Your session expired\n- Browser cache was cleared")
+        st.info("👉 **Solution**: Go back to the original tab where you analyzed your resume, or re-analyze your resume below.")
         st.query_params.clear()
         st.stop()
     
-    with st.spinner("✅ Verifying your payment..."):
+    with st.spinner("✅ Verifying your payment with Razorpay..."):
+        time.sleep(0.5)  # Brief pause for better UX
         try:
             client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
             payment = client.payment.fetch(payment_id)
@@ -64,17 +69,24 @@ if payment_id and not st.session_state.payment_confirmed:
             if payment["status"] == "captured" and payment["amount"] >= 500:
                 st.session_state.payment_confirmed = True
                 st.session_state.paid_users += 1
-                # Clear the payment_id from URL and force scroll to report
+                st.session_state.payment_id = payment_id
+                st.session_state.payment_timestamp = datetime.now().isoformat()
+                
+                # Clear URL parameters
                 st.query_params.clear()
-                st.success("🎉 Payment successful! Loading your full report...")
-                time.sleep(1)
+                
+                # Force rerun to show full report
+                st.success("🎉 Payment verified successfully! Loading your full report...")
+                time.sleep(0.5)
                 st.rerun()
             else:
-                st.error(f"❌ Payment verification failed: {payment['status']}")
+                st.error(f"❌ Payment status: {payment['status']}")
+                st.info("If money was deducted, please contact support with Payment ID: " + payment_id)
                 st.query_params.clear()
         except Exception as e:
-            st.error(f"⚠️ Payment verification error: {e}")
-            st.info("💡 Please contact support with your payment ID if money was deducted.")
+            st.error(f"⚠️ Payment verification error: {str(e)}")
+            st.info(f"💡 If payment was successful, please contact support with Payment ID: {payment_id}")
+            st.info("📧 Email: bittukrazad652@gmail.com")
             st.query_params.clear()
 
 # 🏠 Header
@@ -166,23 +178,26 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
         current_url = st.query_params.get("_url", "")
         callback_url = f"{current_url.split('?')[0]}" if current_url else ""
         
-        # Razorpay Checkout Integration with Full Screen Modal
+        # Razorpay Checkout Integration with FULL SCREEN Modal
         st.components.v1.html(f"""
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <style>
+            /* Force full screen Razorpay modal */
             .razorpay-container {{
                 z-index: 999999 !important;
             }}
             .razorpay-checkout-frame {{
-                width: 500px !important;
+                width: 600px !important;
                 height: 900px !important;
-                min-width: 500px !important;
+                max-height: 95vh !important;
+                min-width: 600px !important;
                 min-height: 900px !important;
             }}
             @media (max-width: 768px) {{
                 .razorpay-checkout-frame {{
                     width: 100vw !important;
                     height: 100vh !important;
+                    max-height: 100vh !important;
                 }}
             }}
         </style>
@@ -222,23 +237,30 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                 "image": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
                 "order_id": "{order['id']}",
                 "handler": function(response) {{
-                    // Show loading message
-                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f0fdf4;"><div style="font-size:64px;margin-bottom:20px;animation:bounce 1s infinite;">✅</div><h2 style="color:#059669;margin:0;">Payment Successful!</h2><p style="color:#666;margin-top:10px;">Redirecting to your report...</p></div><style>@keyframes bounce{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-20px);}}}}</style>';
+                    // Show animated success screen
+                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:white;"><div style="font-size:80px;margin-bottom:20px;animation:bounce 0.6s infinite;">✅</div><h1 style="margin:0;font-size:2.5rem;">Payment Successful!</h1><p style="font-size:1.2rem;margin-top:15px;opacity:0.9;">Unlocking your full report...</p><div style="margin-top:30px;width:200px;height:4px;background:rgba(255,255,255,0.3);border-radius:10px;overflow:hidden;"><div style="height:100%;background:white;animation:progress 2s ease-in-out;border-radius:10px;"></div></div></div><style>@keyframes bounce{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.1);}}}}@keyframes progress{{0%{{width:0;}}100%{{width:100%;}}}}</style>';
                     
-                    // Store payment confirmation in localStorage as backup
+                    // Store payment info
+                    const paymentData = {{
+                        payment_id: response.razorpay_payment_id,
+                        order_id: response.razorpay_order_id,
+                        signature: response.razorpay_signature,
+                        timestamp: new Date().toISOString()
+                    }};
+                    
+                    // Save to sessionStorage (more reliable than localStorage for Streamlit)
                     try {{
-                        localStorage.setItem('payment_verified', 'true');
-                        localStorage.setItem('payment_id', response.razorpay_payment_id);
-                        localStorage.setItem('payment_time', new Date().toISOString());
+                        sessionStorage.setItem('payment_verified', 'true');
+                        sessionStorage.setItem('payment_data', JSON.stringify(paymentData));
                     }} catch(e) {{
-                        console.log("localStorage not available");
+                        console.log("sessionStorage not available");
                     }}
                     
-                    // Redirect back to Streamlit with payment ID
+                    // Redirect back to Streamlit with payment ID after animation
                     setTimeout(function() {{
                         const baseUrl = window.location.href.split('?')[0];
-                        window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id;
-                    }}, 2000);
+                        window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id + "&verified=true";
+                    }}, 2500);
                 }},
                 "prefill": {{
                     "name": "",
@@ -246,11 +268,12 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                     "contact": ""
                 }},
                 "notes": {{
-                    "service": "resume_report"
+                    "service": "resume_report",
+                    "app": "ResumeBoost AI"
                 }},
                 "theme": {{
                     "color": "#2563eb",
-                    "backdrop_color": "rgba(0, 0, 0, 0.7)"
+                    "backdrop_color": "rgba(0, 0, 0, 0.8)"
                 }},
                 "modal": {{
                     "backdropclose": false,
@@ -266,7 +289,7 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                     "display": {{
                         "blocks": {{
                             "banks": {{
-                                "name": "All payment methods",
+                                "name": "Pay using",
                                 "instruments": [
                                     {{
                                         "method": "upi"
@@ -283,19 +306,22 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                                 ]
                             }}
                         }},
+                        "sequence": ["block.banks"],
                         "preferences": {{
                             "show_default_blocks": true
                         }}
                     }}
                 }}
             }};
+            
             var rzp = new Razorpay(options);
             
-            // Open in larger modal
+            // Handle payment failure
             rzp.on('payment.failed', function(response) {{
-                alert('Payment failed: ' + response.error.description);
+                alert('Payment failed: ' + response.error.description + '\\n\\nPlease try again or contact support.');
             }});
             
+            // Open payment modal
             rzp.open();
             e.preventDefault();
         }};
@@ -536,5 +562,3 @@ elif page == "Contact Us":
 st.markdown("---")
 st.caption("© 2025 ResumeBoost AI • Made by an AIML student, for students ❤️")
 st.caption("🔒 Payments powered by Razorpay • No resume data stored")
-        
-
