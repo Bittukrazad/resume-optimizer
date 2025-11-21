@@ -175,9 +175,9 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
             }}
             .razorpay-checkout-frame {{
                 width: 500px !important;
-                height: 700px !important;
+                height: 900px !important;
                 min-width: 500px !important;
-                min-height: 700px !important;
+                min-height: 900px !important;
             }}
             @media (max-width: 768px) {{
                 .razorpay-checkout-frame {{
