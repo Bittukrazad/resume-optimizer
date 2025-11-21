@@ -240,8 +240,87 @@ if st.sidebar.checkbox("🔐 Admin"):
             for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result"]:
                 st.session_state.pop(key, None)
             st.sidebar.success("✅ Stats reset!")
+ # ================== LEGAL PAGES ==================
+
+st.sidebar.markdown("### 📘 Legal & Support")
+
+page = st.sidebar.radio(
+    "Navigate",
+    [
+        "Home",
+        "Terms & Conditions",
+        "Privacy Policy",
+        "Refund & Cancellation Policy",
+        "Contact Us"
+    ]
+)
+
+if page == "Terms & Conditions":
+    st.title("📘 Terms & Conditions")
+    st.markdown("""
+    1. Our platform provides AI-powered resume analysis and suggestions.
+    2. We DO NOT collect, store, or save any resume or personal data. Files are processed temporarily in-memory only.
+    3. All documents are deleted automatically after analysis.
+    4. Payments are non-transferable and service is delivered instantly.
+    5. Misuse or fraudulent activity may result in service denial.
+    6. Disputes fall under Jaipur, Rajasthan jurisdiction.
+    """)
+
+elif page == "Privacy Policy":
+    st.title("🔒 Privacy Policy")
+    st.markdown("""
+    ## No Data Collection
+    We DO NOT collect or store:
+    - Resume contents  
+    - Personal details  
+    - Email, phone, contact data  
+    - Uploaded documents  
+
+    All resumes are processed **temporarily in memory** and deleted instantly after analysis.
+
+    ## Payment Privacy
+    We do NOT store any payment details.
+
+    All payments are securely handled by **Razorpay**, following RBI guidelines.
+
+    ## Third-party
+    Razorpay may collect minimum transaction data for processing.
+
+    We store **zero** personal data.
+
+    """)
+
+elif page == "Refund & Cancellation Policy":
+    st.title("💳 Refund & Cancellation Policy")
+    st.markdown("""
+    ## Cancellations
+    This is a digital service delivered instantly — cancellations are not possible.
+
+    ## Refunds
+    Refunds are only allowed for:
+    - Duplicate payment  
+    - Payment deducted but service not received  
+
+    Refund processing time: **5–7 business days**.
+
+    ## Important Note  
+    As we do NOT store resumes, we cannot recover previous analysis reports.
+    """)
+
+elif page == "Contact Us":
+    st.title("📞 Contact Us")
+    st.markdown("""
+    For support, queries or payment issues, contact us:
+
+    **📧 Email:** bittukrazad652@gmail.com  
+    **📞 Phone:** +918233659229  
+    **📍 Address:** Jaipur, Rajasthan, India  
+
+    Response time: within 24–48 hours.
+    """)
+           
 
 # 📝 Footer
 st.markdown("---")
 st.caption("© 2025 ResumeBoost AI • Made by an AIML student, for students ❤️")
-st.caption("🔒 Payments powered by UPI • No resume data stored")
+st.caption("🔒 Payments powered by Razorpay • No resume data stored")
