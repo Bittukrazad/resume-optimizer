@@ -102,45 +102,55 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     """)
     
     if st.button("📲 Pay ₹5 via UPI", type="primary", use_container_width=True):
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            try:
-                st.image("assets/upi_qr_5rs.png", width=200, caption="Scan to pay ₹5")
-            except:
-                st.warning("QR not found. Place `upi_qr_5rs.png` in `assets/`")
-        with col2:
-            st.markdown("""
-            ### 📲 How to Pay:
-            1. Open **Google Pay / PhonePe**
-            2. Tap **Scan QR**
-            3. Scan this code  
-            4. **₹5 is auto-filled**  
-            5. In *'Add note'*, type: `RB-Report-••••`  
-               (your last 4 phone digits)  
-            6. Tap **Pay**
-            """)
-            
-        
-        st.markdown("---")
-        txn_id = st.text_input("✏️ Last 4 digits of transaction ID", max_chars=4)
-        proof = st.file_uploader("📸 Optional: Payment screenshot", type=["png", "jpg"])
-        
-        if st.button("✅ Confirm Payment", type="primary") and txn_id:
-            if len(txn_id) == 4 and txn_id.isdigit():
-                st.session_state.payment_confirmed = True
-                st.session_state.txn_id = txn_id
-                
-                # ✅ ONLY SHOW SUCCESS AFTER CONFIRMATION
-                if proof:
-                    st.success("✅ Verified with proof! Generating your full report...")
-                else:
-                    st.info("ℹ️ Report unlocked! Add screenshot next time for priority support.")
-                
-                # 🔗 Auto-scroll to report
-                st.markdown('<a href="#full-report" style="color:#2563eb; font-weight:bold;">👇 Scroll to Your Report</a>', unsafe_allow_html=True)
-                st.rerun()
-            else:
-                st.error("⚠️ Please enter exactly 4 digits")
+       # ---------------------------
+# 🔐 RAZORPAY PAYMENT GATEWAY
+# ---------------------------
+st.subheader("💳 Pay ₹5 to Unlock Full Report")
+
+payment_url = "https://rzp.io/rzp/v6xOQu0"
+
+# Initialize session state
+if "payment_confirmed" not in st.session_state:
+    st.session_state.payment_confirmed = False
+
+# Show Pay Button (HTML button that opens Razorpay)
+if not st.session_state.payment_confirmed:
+
+    st.info("To unlock the **Full Resume Report**, please complete the ₹5 payment securely via Razorpay.")
+
+    st.markdown(
+        f"""
+        <style>
+        .pay-btn {{
+            background-color:#2563eb;
+            padding:14px 20px;
+            border-radius:10px;
+            color:white;
+            font-size:18px;
+            font-weight:600;
+            border:none;
+            width:100%;
+            text-align:center;
+            cursor:pointer;
+            margin-top:10px;
+        }}
+        .pay-btn:hover {{
+            background-color:#1e4fcf;
+        }}
+        </style>
+
+        <button class="pay-btn" onclick="window.open('{payment_url}', '_blank')">
+            📲 Pay ₹5 via UPI / Card / Wallet
+        </button>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # User confirms after completing payment
+    if st.button("✅ I Have Completed the Payment", use_container_width=True):
+        st.session_state.payment_confirmed = True
+        st.success("🎉 Payment confirmed! Unlocking your full report...")
+        st.rerun()
 
 # 🎉 Post-payment: Full Report
 if st.session_state.payment_confirmed:
