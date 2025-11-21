@@ -364,6 +364,28 @@ elif page == "Contact Us":
 
     Response time: within 24–48 hours.
     """)
+
+    # 🔐 Razorpay Payment Verification (Auto-unlock)
+payment_id = st.query_params.get("payment_id")
+if payment_id and not st.session_state.payment_confirmed:
+    with st.spinner("✅ Verifying payment with Razorpay..."):
+        try:
+            # Initialize client (safe with test keys)
+            RAZORPAY_KEY = "rzp_test_00000000000000"  # Public test key (safe to commit)
+            RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"     # Dummy (not used in client-side verify)
+            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
+            
+            # Verify payment
+            payment = client.payment.fetch(payment_id)
+            if payment["status"] == "captured" and payment["amount"] == 500:
+                st.session_state.payment_confirmed = True
+                st.session_state.paid_users += 1
+                st.success("🎉 ₹5 payment verified! Generating your full report...")
+                st.rerun()
+            else:
+                st.error(f"❌ Payment failed: {payment['status']}")
+        except Exception as e:
+            st.error(f"⚠️ Verification failed: {e}")
            
 
 # 📝 Footer
