@@ -10,27 +10,14 @@ import io
 from datetime import datetime
 from utils import extract_text_from_pdf, extract_text_from_docx
 from resume_analyzer import analyze_resume
-from report_generator import generate_pdf_report  # ✅ v2: PDF reports
-import razorpay
+from report_generator import generate_pdf_report
 import os
 
-# 🔐 Load secrets (safe for Streamlit Cloud)
+# 🔐 Load admin password securely (Streamlit Secrets or .env)
 try:
-    # Streamlit Cloud / Local with secrets.toml
-    RAZORPAY_KEY = st.secrets["razorpay"]["RAZORPAY_KEY"]
-    RAZORPAY_SECRET = st.secrets["razorpay"]["RAZORPAY_SECRET"]
     ADMIN_PASSWORD = st.secrets["admin"]["password"]
 except:
-    # Local dev fallback (never commit real secrets here!)
-    RAZORPAY_KEY = os.getenv("RAZORPAY_KEY", "rzp_test_00000000000000")
-    RAZORPAY_SECRET = os.getenv("RAZORPAY_SECRET", "XXXXXXXXXXXXXXXX")
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "test123")
-
-# Initialize Razorpay client (safe fallback)
-try:
-    client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
-except:
-    client = None
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "test123")  # Local dev fallback
 
 # 🎨 Custom CSS (Modern, Student-Friendly)
 st.markdown("""
@@ -87,6 +74,8 @@ if "reports_generated" not in st.session_state:
     st.session_state.reports_generated = 0
 if "paid_users" not in st.session_state:
     st.session_state.paid_users = 0
+if "payment_confirmed" not in st.session_state:
+    st.session_state.payment_confirmed = False
 
 # 🏠 Header
 st.title("🚀 ResumeBoost AI")
@@ -133,99 +122,71 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     
     st.progress(result['ats_score'] / 100)
     st.info(f"🎯 Detected Role: **{result['detected_role']}**")
-    st.info("💡 *Free preview shows score only. Unlock full report with section-wise feedback!*")
+    st.info("💡 *Free preview shows score only. Unlock full report with ₹5!*")
     
     st.session_state.reports_generated += 1
 
-# 💰 Upgrade to Full Report
-if "last_result" in st.session_state:
+# 💰 Upgrade to Full Report (UPI Flow)
+if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     st.markdown("---")
-    st.subheader("✨ Unlock Full Report (₹49)")
+    st.subheader("✨ Unlock Full Report (Only ₹5!)")
+    st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
+    
     st.markdown("""
-    - 🔍 **Section-wise ATS scores** (Skills, Projects, etc.)  
-    - 🎯 **Role-specific keyword gaps**  
-    - ✨ **AI-powered rewrite suggestions**  
-    - 📥 **Downloadable PDF + ATS template**
+    ✅ **You’ll get**:  
+    - 🔍 Section-wise ATS scores (Skills, Projects, Experience)  
+    - 🎯 Role-specific keyword gaps  
+    - ✨ AI-powered rewrite suggestions (copy-paste ready!)  
+    - 📥 Downloadable PDF report + ATS resume template  
     """)
     
-    if st.button("💳 Pay ₹49 via Razorpay", type="secondary", use_container_width=True):
-        if client:
+    if st.button("📲 Pay ₹5 via UPI", type="primary", use_container_width=True):
+        col1, col2 = st.columns([1, 2])
+        with col1:
             try:
-                order = client.order.create({
-                    "amount": 4900,
-                    "currency": "INR",
-                    "receipt": f"rb_{int(datetime.now().timestamp())}",
-                    "notes": {"service": "resume_report"}
-                })
-                
-                # Razorpay Checkout
-                st.markdown(f"""
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-                <script>
-                var options = {{
-                    "key": "{RAZORPAY_KEY}",
-                    "amount": "4900",
-                    "currency": "INR",
-                    "name": "ResumeBoost AI",
-                    "description": "Resume Optimization Report",
-                    "order_id": "{order['id']}",
-                    "handler": function (response) {{
-                        window.parent.postMessage({{ type: 'razorpay_success', payment_id: response.razorpay_payment_id }}, '*');
-                    }},
-                    "prefill": {{
-                        "name": "",
-                        "email": "",
-                        "contact": ""
-                    }},
-                    "theme": {{ "color": "#2563eb" }}
-                }};
-                var rzp1 = new Razorpay(options);
-                rzp1.open();
-                </script>
-                """, unsafe_allow_html=True)
-                
-                st.components.v1.html("""
-                <script>
-                window.addEventListener('message', function(e) {
-                    if (e.data.type === 'razorpay_success') {
-                        window.parent.location.href = '?payment=success';
-                    }
-                });
-                </script>
-                """, height=0)
-            except Exception as e:
-                st.error(f"Payment setup error: {e}")
-                st.info("Using test mode — click below to simulate success.")
-                if st.button("✅ Simulate Payment Success (Testing)"):
-                    st.query_params["payment"] = "success"
-                    st.rerun()
-        else:
-            st.info("Razorpay not configured — using test mode.")
-            if st.button("✅ Simulate Payment Success"):
-                st.query_params["payment"] = "success"
+                st.image("assets/upi_qr_5rs.png", width=200, caption="Scan to pay ₹5")
+            except:
+                st.warning("QR not found. Place `upi_qr_5rs.png` in `assets/`")
+        with col2:
+            st.markdown("""
+            ### 📲 How to Pay (15 seconds):
+            1. Open **Google Pay / PhonePe**
+            2. Tap **Scan QR**
+            3. Scan this code  
+            4. **₹5 is auto-filled**  
+            5. In *'Add note'*, type: `RB-Report-••••`  
+               (your **last 4 phone digits**)  
+            6. Tap **Pay**
+            """)
+            st.success("✅ ₹5 received! Your full ATS report is ready below 🎉")
+        
+        st.markdown("---")
+        txn_id = st.text_input("✏️ Enter last 4 digits of transaction ID", max_chars=4)
+        if st.button("✅ Confirm Payment", type="primary") and txn_id:
+            if len(txn_id) == 4 and txn_id.isdigit():
+                st.session_state.payment_confirmed = True
+                st.session_state.txn_id = txn_id
+                st.success("✅ Payment confirmed! Generating your full report...")
                 st.rerun()
+            else:
+                st.error("⚠️ Please enter 4-digit transaction ID")
 
-# 🎉 Post-payment: Full Report (v2)
-if st.query_params.get("payment") == "success":
+# 🎉 Post-payment: Full Report
+if st.session_state.payment_confirmed:
     st.balloons()
-    st.success("🎉 Payment successful! Here’s your full report:")
+    st.success("🎉 Payment received! Here’s your full report:")
     
     result = st.session_state.last_result
     st.session_state.paid_users += 1
     
-    # Tabs for clean UX
     tab1, tab2, tab3, tab4 = st.tabs(["🎯 Summary", "🔍 Gaps", "✨ Rewrite", "📥 Download"])
     
     with tab1:
-        # Score Display
         score_color = "score-good" if result['ats_score'] >= 70 else "score-bad"
         st.markdown(f"<div class='score-display {score_color}'>{result['ats_score']}/100</div>", unsafe_allow_html=True)
-        
-        # Progress bar
         st.markdown(f"<div class='progress-bar'><div class='progress-fill' style='width: {result['ats_score']}%'></div></div>", unsafe_allow_html=True)
         st.caption(f"🎯 Target Role: **{result['detected_role']}**")
         
-        # Section Scores
         st.subheader("📊 Section-wise Feedback")
         for sec, score in result['section_scores'].items():
             status = "✅ Good" if score >= 70 else "⚠️ Needs Work"
@@ -252,27 +213,19 @@ if st.query_params.get("payment") == "success":
         st.subheader("✨ AI Rewrite Suggestion")
         before = "Built a machine learning model."
         after = f"Developed a {result['detected_role']} solution using Python & NLP, achieving 92% accuracy."
-        
         st.text_area("Before (Weak)", before, height=70, disabled=True)
         st.text_area("After (ATS-Optimized)", after, height=70, disabled=True)
         
         if st.button("📋 Copy Optimized Version", key="copy_btn"):
-            # JavaScript clipboard copy
             st.components.v1.html(f"""
             <script>
             navigator.clipboard.writeText("{after}");
-            parent.document.querySelector('button[kind="secondary"]').innerText = "✅ Copied!";
-            setTimeout(() => {{
-                parent.document.querySelector('button[kind="secondary"]').innerText = "📋 Copy Optimized Version";
-            }}, 2000);
             </script>
             """, height=0)
-            st.success("Copied to clipboard!", icon="✅")
+            st.success("✅ Copied to clipboard!", icon="✅")
     
     with tab4:
         st.subheader("📥 Download Your Report")
-        
-        # Generate PDF
         if st.button("📄 Generate PDF Report", type="primary", use_container_width=True):
             try:
                 filename = generate_pdf_report(result, "student")
@@ -286,9 +239,7 @@ if st.query_params.get("payment") == "success":
                     )
             except Exception as e:
                 st.error(f"PDF generation failed: {e}")
-                st.info("Text report below:")
         
-        # Text fallback
         report_text = f"""ResumeBoost AI Report
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 ATS Score: {result['ats_score']}/100
@@ -305,25 +256,22 @@ Suggestions:
             mime="text/plain",
             use_container_width=True
         )
-        
         st.markdown("🎓 **Free ATS Resume Template**: [Download Here](https://docs.google.com/document/d/1xyz)")
 
-# 📊 Admin Dashboard
+# 📊 Admin Dashboard (Secure)
 if st.sidebar.checkbox("🔐 Admin"):
     pwd = st.sidebar.text_input("Password", type="password")
     if pwd == ADMIN_PASSWORD:
         st.sidebar.title("📊 Admin Dashboard")
         st.sidebar.metric("📈 Reports Generated", st.session_state.reports_generated)
         st.sidebar.metric("💰 Paid Users", st.session_state.paid_users)
-        st.sidebar.info("💡 Export data to CSV & pitch to TPOs!")
-        
-        # Reset button (for testing)
         if st.sidebar.button("🔄 Reset Stats"):
-            st.session_state.reports_generated = 0
-            st.session_state.paid_users = 0
-            st.sidebar.success("Stats reset!")
+            for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result"]:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.sidebar.success("✅ Stats reset!")
 
 # 📝 Footer
 st.markdown("---")
 st.caption("© 2025 ResumeBoost AI • Made by an AIML student, for students ❤️")
-st.caption("🔒 Payments secured by Razorpay • No resume data stored")
+st.caption("🔒 Payments powered by UPI • No resume data stored")
