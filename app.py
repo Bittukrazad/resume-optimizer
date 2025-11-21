@@ -103,55 +103,45 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     
 if st.button("📲 Pay ₹5 via UPI", type="primary", use_container_width=True):
        # ---------------------------
-# 🔐 RAZORPAY PAYMENT GATEWAY
-# ---------------------------
-    st.subheader("💳 Pay ₹5 to Unlock Full Report")
-    
-    payment_url = "https://rzp.io/rzp/v6xOQu0"
-    
-    # Initialize session state
-    if "payment_confirmed" not in st.session_state:
-        st.session_state.payment_confirmed = False
-    
-    # Show Pay Button (HTML button that opens Razorpay)
-    if not st.session_state.payment_confirmed:
-    
-        st.info("To unlock the **Full Resume Report**, please complete the ₹5 payment securely via Razorpay.")
-    
-        st.markdown(
-            f"""
-            <style>
-            .pay-btn {{
-                background-color:#2563eb;
-                padding:14px 20px;
-                border-radius:10px;
-                color:white;
-                font-size:18px;
-                font-weight:600;
-                border:none;
-                width:100%;
-                text-align:center;
-                cursor:pointer;
-                margin-top:10px;
-            }}
-            .pay-btn:hover {{
-                background-color:#1e4fcf;
-            }}
-            </style>
-    
-            <button class="pay-btn" onclick="window.open('{payment_url}', '_blank')">
-                📲 Pay ₹5 via UPI / Card / Wallet
-            </button>
-            """,
-            unsafe_allow_html=True
-        )
-    
-        # User confirms after completing payment
-        if st.button("✅ I Have Completed the Payment", use_container_width=True):
-            st.session_state.payment_confirmed = True
-            st.success("🎉 Payment confirmed! Unlocking your full report...")
-            st.rerun()
-
+# 💰 Razorpay Payment (Standard Checkout)
+    if "last_result" in st.session_state and not st.session_state.payment_confirmed:
+        st.markdown("---")
+        st.subheader("✨ Unlock Full Report (Only ₹5!)")
+        st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
+        
+        st.markdown("""
+        ✅ **You’ll get**:  
+        - 🔍 Section-wise ATS scores  
+        - 🎯 Role-specific keyword gaps  
+        - ✨ AI rewrite suggestions  
+        - 📥 PDF report + ATS template  
+        """)
+        
+        # ✅ Razorpay Standard Checkout (Pre-filled ₹5)
+        st.markdown(f"""
+        <a href="https://rzp.io/rzp/v6xOQu0?amount=500&currency=INR&notes[service]=resume_report"
+           style="
+             display: inline-block;
+             background: #2563eb;
+             color: white;
+             padding: 12px 24px;
+             border-radius: 8px;
+             font-weight: bold;
+             text-decoration: none;
+             width: 100%;
+             text-align: center;
+           ">
+           💳 Pay ₹5 via Razorpay
+        </a>
+        <script>
+        // Auto-redirect after payment
+        const urlParams = new URLSearchParams(window.location.search);
+        const payment_id = urlParams.get('payment_id');
+        if (payment_id) {{
+            window.parent.location.href = window.parent.location.pathname + '?payment_id=' + payment_id;
+        }}
+        </script>
+        """, unsafe_allow_html=True)
 # 🎉 Post-payment: Full Report
 if st.session_state.payment_confirmed:
     # 🔗 ANCHOR FOR SCROLL
