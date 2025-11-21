@@ -86,20 +86,6 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     st.info(f"🎯 Detected Role: **{result['detected_role']}**")
     st.info("💡 *Free preview shows score only. Unlock full report with ₹5!*")
     st.session_state.reports_generated += 1
-
-# 💰 Upgrade to Full Report (UPI Flow)
-if "last_result" in st.session_state and not st.session_state.payment_confirmed:
-    st.markdown("---")
-    st.subheader("✨ Unlock Full Report (Only ₹5!)")
-    st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
-    
-    st.markdown("""
-    ✅ **You’ll get**:  
-    - 🔍 Section-wise ATS scores  
-    - 🎯 Role-specific keyword gaps  
-    - ✨ AI rewrite suggestions  
-    - 📥 PDF report + ATS template  
-    """)
     
        # ---------------------------
 # 💰 Razorpay Payment (Standard Checkout)
