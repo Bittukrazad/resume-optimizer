@@ -50,6 +50,12 @@ if "payment_confirmed" not in st.session_state:
 # 🔐 Check for payment verification on page load
 payment_id = st.query_params.get("payment_id")
 if payment_id and not st.session_state.payment_confirmed:
+    # Check if we have analysis result before verifying payment
+    if "last_result" not in st.session_state:
+        st.error("⚠️ Analysis data not found. Please analyze your resume again and then make payment.")
+        st.query_params.clear()
+        st.stop()
+    
     with st.spinner("✅ Verifying your payment..."):
         try:
             client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
@@ -58,13 +64,18 @@ if payment_id and not st.session_state.payment_confirmed:
             if payment["status"] == "captured" and payment["amount"] >= 500:
                 st.session_state.payment_confirmed = True
                 st.session_state.paid_users += 1
-                # Clear the payment_id from URL
+                # Clear the payment_id from URL and force scroll to report
                 st.query_params.clear()
+                st.success("🎉 Payment successful! Loading your full report...")
+                time.sleep(1)
                 st.rerun()
             else:
                 st.error(f"❌ Payment verification failed: {payment['status']}")
+                st.query_params.clear()
         except Exception as e:
             st.error(f"⚠️ Payment verification error: {e}")
+            st.info("💡 Please contact support with your payment ID if money was deducted.")
+            st.query_params.clear()
 
 # 🏠 Header
 st.title("🚀 ResumeBoost AI")
@@ -100,9 +111,11 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     with st.spinner("Analyzing... (takes ~5 sec)"):
         result = analyze_resume(resume_text, job_desc)
     
+    # Store ALL necessary data in session state
     st.session_state.last_result = result
     st.session_state.resume_text = resume_text
     st.session_state.job_desc = job_desc
+    st.session_state.analysis_timestamp = datetime.now().isoformat()
     
     score_color = "score-good" if result['ats_score'] >= 70 else "score-bad"
     st.markdown(f"<div class='score-display {score_color}'>{result['ats_score']}/100</div>", unsafe_allow_html=True)
@@ -110,6 +123,9 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     st.info(f"🎯 Detected Role: **{result['detected_role']}**")
     st.info("💡 *Free preview shows score only. Unlock full report with ₹5!*")
     st.session_state.reports_generated += 1
+    
+    # Debug: Show what's stored
+    # st.write("DEBUG - Stored in session:", list(st.session_state.keys()))
 
 # 💰 Razorpay Payment Section
 if "last_result" in st.session_state and not st.session_state.payment_confirmed:
@@ -207,13 +223,22 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                 "order_id": "{order['id']}",
                 "handler": function(response) {{
                     // Show loading message
-                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:20px;">✅</div><h2 style="color:#059669;">Payment Successful!</h2><p>Redirecting to your report...</p></div>';
+                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f0fdf4;"><div style="font-size:64px;margin-bottom:20px;animation:bounce 1s infinite;">✅</div><h2 style="color:#059669;margin:0;">Payment Successful!</h2><p style="color:#666;margin-top:10px;">Redirecting to your report...</p></div><style>@keyframes bounce{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-20px);}}}}</style>';
+                    
+                    // Store payment confirmation in localStorage as backup
+                    try {{
+                        localStorage.setItem('payment_verified', 'true');
+                        localStorage.setItem('payment_id', response.razorpay_payment_id);
+                        localStorage.setItem('payment_time', new Date().toISOString());
+                    }} catch(e) {{
+                        console.log("localStorage not available");
+                    }}
                     
                     // Redirect back to Streamlit with payment ID
                     setTimeout(function() {{
                         const baseUrl = window.location.href.split('?')[0];
                         window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id;
-                    }}, 1500);
+                    }}, 2000);
                 }},
                 "prefill": {{
                     "name": "",
@@ -282,7 +307,19 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
         st.info("💡 Please contact support if this issue persists.")
 
 # 🎉 Post-payment: Full Report
-if st.session_state.payment_confirmed and "last_result" in st.session_state:
+if st.session_state.payment_confirmed:
+    # Check if we have the required data
+    if "last_result" not in st.session_state:
+        st.error("⚠️ Report data not found. This may happen if:")
+        st.info("1. You cleared your browser cache\n2. The session expired\n3. You opened the link in a new browser")
+        st.info("👉 **Solution**: Please upload your resume again and re-analyze to generate a new report.")
+        
+        # Reset payment confirmation
+        if st.button("🔄 Start Over"):
+            st.session_state.payment_confirmed = False
+            st.rerun()
+        st.stop()
+    
     st.markdown('<div id="full-report"></div>', unsafe_allow_html=True)
     st.balloons()
     st.success("🎉 Payment confirmed! Here's your full report:")
@@ -499,3 +536,5 @@ elif page == "Contact Us":
 st.markdown("---")
 st.caption("© 2025 ResumeBoost AI • Made by an AIML student, for students ❤️")
 st.caption("🔒 Payments powered by Razorpay • No resume data stored")
+        
+
