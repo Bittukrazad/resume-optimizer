@@ -117,13 +117,19 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     st.subheader("✨ Unlock Full Report (Only ₹5!)")
     st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
     
+    # Create an eye-catching card for benefits
     st.markdown("""
-    ✅ **You'll get**:  
-    - 🔍 Section-wise ATS scores  
-    - 🎯 Role-specific keyword gaps  
-    - ✨ AI rewrite suggestions  
-    - 📥 PDF report + ATS template  
-    """)
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 20px; border-radius: 12px; color: white; margin: 15px 0;">
+        <h3 style="margin: 0 0 15px 0; color: white;">✅ You'll get:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin: 8px 0;">🔍 <strong>Section-wise ATS scores</strong></li>
+            <li style="margin: 8px 0;">🎯 <strong>Role-specific keyword gaps</strong></li>
+            <li style="margin: 8px 0;">✨ <strong>AI rewrite suggestions</strong></li>
+            <li style="margin: 8px 0;">📥 <strong>PDF report + ATS template</strong></li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Generate Razorpay order
     try:
@@ -165,21 +171,29 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
             }}
         </style>
         <button id="rzp-button" style="
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
             color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
+            padding: 18px 32px;
+            border-radius: 12px;
             border: none;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            font-size: 17px;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            font-size: 20px;
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
             transition: all 0.3s ease;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(37, 99, 235, 0.4)';" 
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(37, 99, 235, 0.3)';">
-            💳 Pay ₹5 via Razorpay
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        " onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 12px 28px rgba(239, 68, 68, 0.5)';" 
+           onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 20px rgba(239, 68, 68, 0.4)';">
+            💳 PAY ONLY ₹5 NOW
         </button>
+        
+        <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 8px; border: 2px dashed #f59e0b;">
+            <p style="margin: 0; color: #92400e; font-weight: bold; font-size: 14px;">
+                ⚡ Instant Access • 🔒 100% Secure Payment • ⏱️ Takes 30 seconds
+            </p>
+        </div>
         
         <script>
         document.getElementById('rzp-button').onclick = function(e) {{
