@@ -104,29 +104,38 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
         
         # ✅ Razorpay Standard Checkout (Pre-filled ₹5)
         st.markdown(f"""
-        <a href="https://rzp.io/rzp/v6xOQu0?amount=500&currency=INR&notes[service]=resume_report"
-           style="
-             display: inline-block;
-             background: #2563eb;
-             color: white;
-             padding: 12px 24px;
-             border-radius: 8px;
-             font-weight: bold;
-             text-decoration: none;
-             width: 100%;
-             text-align: center;
-           ">
-           💳 Pay ₹5 via Razorpay
-        </a>
-        <script>
-        // Auto-redirect after payment
-        const urlParams = new URLSearchParams(window.location.search);
-        const payment_id = urlParams.get('payment_id');
+<a href="https://rzp.io/rzp/v6xOQu0?amount=500&currency=INR&notes[service]=resume_report"
+   style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; text-decoration: none; width: 100%; text-align: center;">
+   💳 Pay ₹5 via Razorpay
+</a>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+// Enhanced auto-redirect for ALL payment methods (card, UPI, QR)
+window.addEventListener('message', function(e) {{
+    if (e.data.type === 'rzp_payment_complete') {{
+        const payment_id = e.data.payment_id;
         if (payment_id) {{
-            window.parent.location.href = window.parent.location.pathname + '?payment_id=' + payment_id;
+            // Redirect to your app with payment_id
+            window.parent.location.href = 'https://resume-optimizer-v2.streamlit.app/?payment_id=' + payment_id;
         }}
-        </script>
-        """, unsafe_allow_html=True)
+    }}
+}});
+
+// Also listen for URL hash changes (for older Razorpay)
+const checkHash = () => {{
+    const hash = window.location.hash;
+    if (hash.includes('payment_id=')) {{
+        const payment_id = hash.split('payment_id=')[1];
+        if (payment_id && !window.location.search.includes('payment_id')) {{
+            window.parent.location.href = 'https://resume-optimizer-v2.streamlit.app/?payment_id=' + payment_id;
+        }}
+    }
+}};
+setInterval(checkHash, 1000);
+</script>
+""", unsafe_allow_html=True)
+
 # 🎉 Post-payment: Full Report
 if st.session_state.payment_confirmed:
     # 🔗 ANCHOR FOR SCROLL
@@ -352,25 +361,56 @@ elif page == "Contact Us":
 
     # 🔐 Razorpay Payment Verification (Auto-unlock)
 payment_id = st.query_params.get("payment_id")
+
+# Also check URL fragment (for QR/UPI payments where payment_id is in #hash)
+if not payment_id:
+    from urllib.parse import urlparse
+    import re
+    # Get full URL (Streamlit doesn't expose hash directly)
+    url_params = st.experimental_get_query_params()
+    if "url" in url_params:
+        full_url = url_params["url"][0]
+        match = re.search(r"[?&#]payment_id=([a-zA-Z0-9_]+)", full_url)
+        if match:
+            payment_id = match.group(1)
+
 if payment_id and not st.session_state.payment_confirmed:
     with st.spinner("✅ Verifying payment with Razorpay..."):
         try:
-            # Initialize client (safe with test keys)
-            RAZORPAY_KEY = "rzp_test_00000000000000"  # Public test key (safe to commit)
-            RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"     # Dummy (not used in client-side verify)
+            # Use secrets for live mode, fallback to test keys
+            try:
+                RAZORPAY_KEY = st.secrets["razorpay"]["RAZORPAY_KEY"]
+                RAZORPAY_SECRET = st.secrets["razorpay"]["RAZORPAY_SECRET"]
+            except:
+                RAZORPAY_KEY = "rzp_test_00000000000000"
+                RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"
+            
             client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
             
-            # Verify payment
+            # Fetch and verify payment
             payment = client.payment.fetch(payment_id)
+            
+            # Log for debugging (safe — no sensitive data)
+            print(f"Payment fetched: ID={payment_id}, Status={payment['status']}, Amount={payment['amount']}")
+            
             if payment["status"] == "captured" and payment["amount"] == 500:
                 st.session_state.payment_confirmed = True
                 st.session_state.paid_users += 1
                 st.success("🎉 ₹5 payment verified! Generating your full report...")
                 st.rerun()
             else:
-                st.error(f"❌ Payment failed: {payment['status']}")
+                st.error(f"❌ Payment not captured or wrong amount (₹{payment['amount']/100})")
+                st.info("ℹ️ Use test card `4111 1111 1111 1111` for ₹5")
+                
         except Exception as e:
-            st.error(f"⚠️ Verification failed: {e}")
+            error_msg = str(e)
+            if "404" in error_msg:
+                st.error("⚠️ Invalid payment ID — try paying again")
+            elif "authentication" in error_msg.lower():
+                st.error("🔐 Razorpay keys misconfigured — contact admin")
+            else:
+                st.error(f"⚠️ Verification failed: {error_msg}")
+            st.info("💡 Refresh page and try payment again")
            
 
 # 📝 Footer
