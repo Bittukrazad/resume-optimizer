@@ -144,20 +144,42 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
         current_url = st.query_params.get("_url", "")
         callback_url = f"{current_url.split('?')[0]}" if current_url else ""
         
-        # Razorpay Checkout Integration
+        # Razorpay Checkout Integration with Full Screen Modal
         st.components.v1.html(f"""
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <style>
+            .razorpay-container {{
+                z-index: 999999 !important;
+            }}
+            .razorpay-checkout-frame {{
+                width: 500px !important;
+                height: 700px !important;
+                min-width: 500px !important;
+                min-height: 700px !important;
+            }}
+            @media (max-width: 768px) {{
+                .razorpay-checkout-frame {{
+                    width: 100vw !important;
+                    height: 100vh !important;
+                }}
+            }}
+        </style>
         <button id="rzp-button" style="
-            background: #2563eb;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: white;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border-radius: 8px;
             border: none;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            font-size: 16px;
-        ">💳 Pay ₹5 via Razorpay</button>
+            font-size: 17px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(37, 99, 235, 0.4)';" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(37, 99, 235, 0.3)';">
+            💳 Pay ₹5 via Razorpay
+        </button>
         
         <script>
         document.getElementById('rzp-button').onclick = function(e) {{
@@ -167,32 +189,79 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                 "currency": "INR",
                 "name": "ResumeBoost AI",
                 "description": "Full Resume Analysis Report",
+                "image": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
                 "order_id": "{order['id']}",
                 "handler": function(response) {{
+                    // Show loading message
+                    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:20px;">✅</div><h2 style="color:#059669;">Payment Successful!</h2><p>Redirecting to your report...</p></div>';
+                    
                     // Redirect back to Streamlit with payment ID
-                    const baseUrl = window.location.href.split('?')[0];
-                    window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id;
+                    setTimeout(function() {{
+                        const baseUrl = window.location.href.split('?')[0];
+                        window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id;
+                    }}, 1500);
                 }},
                 "prefill": {{
                     "name": "",
                     "email": "",
                     "contact": ""
                 }},
+                "notes": {{
+                    "service": "resume_report"
+                }},
                 "theme": {{
-                    "color": "#2563eb"
+                    "color": "#2563eb",
+                    "backdrop_color": "rgba(0, 0, 0, 0.7)"
                 }},
                 "modal": {{
+                    "backdropclose": false,
+                    "escape": true,
+                    "handleback": true,
+                    "confirm_close": true,
                     "ondismiss": function() {{
                         console.log("Payment cancelled by user");
+                    }},
+                    "animation": true
+                }},
+                "config": {{
+                    "display": {{
+                        "blocks": {{
+                            "banks": {{
+                                "name": "All payment methods",
+                                "instruments": [
+                                    {{
+                                        "method": "upi"
+                                    }},
+                                    {{
+                                        "method": "card"
+                                    }},
+                                    {{
+                                        "method": "netbanking"
+                                    }},
+                                    {{
+                                        "method": "wallet"
+                                    }}
+                                ]
+                            }}
+                        }},
+                        "preferences": {{
+                            "show_default_blocks": true
+                        }}
                     }}
                 }}
             }};
             var rzp = new Razorpay(options);
+            
+            // Open in larger modal
+            rzp.on('payment.failed', function(response) {{
+                alert('Payment failed: ' + response.error.description);
+            }});
+            
             rzp.open();
             e.preventDefault();
         }};
         </script>
-        """, height=60)
+        """, height=70)
         
     except Exception as e:
         st.error(f"❌ Payment setup error: {e}")
