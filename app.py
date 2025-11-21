@@ -13,59 +13,24 @@ from resume_analyzer import analyze_resume
 from report_generator import generate_pdf_report
 import os
 
-# 🔐 Load admin password securely (Streamlit Secrets or .env)
+# 🔐 Load admin password securely
 try:
     ADMIN_PASSWORD = st.secrets["admin"]["password"]
 except:
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "test123")  # Local dev fallback
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "test123")
 
-# 🎨 Custom CSS (Modern, Student-Friendly)
+# 🎨 Custom CSS
 st.markdown("""
 <style>
-    .report-card { 
-        background: #f8fafc; 
-        padding: 20px; 
-        border-radius: 12px; 
-        margin: 10px 0; 
-        border-left: 4px solid #3b82f6;
-    }
-    .score-display { 
-        font-size: 2.5rem; 
-        font-weight: bold; 
-        text-align: center; 
-        margin: 1rem 0;
-    }
+    .report-card { background: #f8fafc; padding: 20px; border-radius: 12px; margin: 10px 0; border-left: 4px solid #3b82f6; }
+    .score-display { font-size: 2.5rem; font-weight: bold; text-align: center; margin: 1rem 0; }
     .score-good { color: #059669; }
     .score-bad { color: #dc2626; }
-    .keyword-tag { 
-        background: #dbeafe; 
-        color: #1d4ed8; 
-        padding: 2px 8px; 
-        border-radius: 6px; 
-        margin: 2px;
-        display: inline-block;
-    }
-    .missing-tag { 
-        background: #fee2e2; 
-        color: #dc2626; 
-    }
-    .section-score { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        margin: 8px 0;
-    }
-    .progress-bar {
-        height: 8px;
-        background: #e2e8f0;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #3b82f6, #60a5fa);
-        border-radius: 4px;
-    }
+    .keyword-tag { background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; margin: 2px; display: inline-block; }
+    .missing-tag { background: #fee2e2; color: #dc2626; }
+    .section-score { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -84,14 +49,13 @@ st.markdown("---")
 
 # 📝 Input
 col1, col2 = st.columns(2)
-
 with col1:
     resume_file = st.file_uploader("📄 Upload Resume (PDF/DOCX)", type=["pdf", "docx"])
 with col2:
     job_desc = st.text_area(
         "🎯 Job Description", 
         height=150, 
-        placeholder="Paste job description or key skills...\n(e.g., 'Hiring ML Intern: Python, scikit-learn, NLP...')"
+        placeholder="Paste job description or key skills..."
     )
 
 # ⚙️ Parse resume
@@ -103,7 +67,7 @@ if resume_file:
         elif resume_file.name.endswith(".docx"):
             resume_text = extract_text_from_docx(resume_file)
         if not resume_text.strip():
-            st.error("⚠️ Could not extract text. Try a standard single-column resume.")
+            st.error("⚠️ Could not extract text. Try a standard resume.")
     except Exception as e:
         st.error(f"❌ Error parsing file: {e}")
 
@@ -116,14 +80,11 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     st.session_state.resume_text = resume_text
     st.session_state.job_desc = job_desc
     
-    # 📊 Free Preview
     score_color = "score-good" if result['ats_score'] >= 70 else "score-bad"
     st.markdown(f"<div class='score-display {score_color}'>{result['ats_score']}/100</div>", unsafe_allow_html=True)
-    
     st.progress(result['ats_score'] / 100)
     st.info(f"🎯 Detected Role: **{result['detected_role']}**")
     st.info("💡 *Free preview shows score only. Unlock full report with ₹5!*")
-    
     st.session_state.reports_generated += 1
 
 # 💰 Upgrade to Full Report (UPI Flow)
@@ -134,10 +95,10 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     
     st.markdown("""
     ✅ **You’ll get**:  
-    - 🔍 Section-wise ATS scores (Skills, Projects, Experience)  
+    - 🔍 Section-wise ATS scores  
     - 🎯 Role-specific keyword gaps  
-    - ✨ AI-powered rewrite suggestions (copy-paste ready!)  
-    - 📥 Downloadable PDF report + ATS resume template  
+    - ✨ AI rewrite suggestions  
+    - 📥 PDF report + ATS template  
     """)
     
     if st.button("📲 Pay ₹5 via UPI", type="primary", use_container_width=True):
@@ -149,32 +110,44 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                 st.warning("QR not found. Place `upi_qr_5rs.png` in `assets/`")
         with col2:
             st.markdown("""
-            ### 📲 How to Pay (15 seconds):
+            ### 📲 How to Pay:
             1. Open **Google Pay / PhonePe**
             2. Tap **Scan QR**
             3. Scan this code  
             4. **₹5 is auto-filled**  
             5. In *'Add note'*, type: `RB-Report-••••`  
-               (your **last 4 phone digits**)  
+               (your last 4 phone digits)  
             6. Tap **Pay**
             """)
-            st.success("✅ ₹5 received! Your full ATS report is ready below 🎉")
+            
         
         st.markdown("---")
-        txn_id = st.text_input("✏️ Enter last 4 digits of transaction ID", max_chars=4)
+        txn_id = st.text_input("✏️ Last 4 digits of transaction ID", max_chars=4)
+        proof = st.file_uploader("📸 Optional: Payment screenshot", type=["png", "jpg"])
+        
         if st.button("✅ Confirm Payment", type="primary") and txn_id:
             if len(txn_id) == 4 and txn_id.isdigit():
                 st.session_state.payment_confirmed = True
                 st.session_state.txn_id = txn_id
-                st.success("✅ Payment confirmed! Generating your full report...")
+                
+                # ✅ ONLY SHOW SUCCESS AFTER CONFIRMATION
+                if proof:
+                    st.success("✅ Verified with proof! Generating your full report...")
+                else:
+                    st.info("ℹ️ Report unlocked! Add screenshot next time for priority support.")
+                
+                # 🔗 Auto-scroll to report
+                st.markdown('<a href="#full-report" style="color:#2563eb; font-weight:bold;">👇 Scroll to Your Report</a>', unsafe_allow_html=True)
                 st.rerun()
             else:
-                st.error("⚠️ Please enter 4-digit transaction ID")
+                st.error("⚠️ Please enter exactly 4 digits")
 
 # 🎉 Post-payment: Full Report
 if st.session_state.payment_confirmed:
+    # 🔗 ANCHOR FOR SCROLL
+    st.markdown('<div id="full-report"></div>', unsafe_allow_html=True)
     st.balloons()
-    st.success("🎉 Payment received! Here’s your full report:")
+    st.success("🎉 Payment confirmed! Here’s your full report:")
     
     result = st.session_state.last_result
     st.session_state.paid_users += 1
@@ -218,9 +191,7 @@ if st.session_state.payment_confirmed:
         
         if st.button("📋 Copy Optimized Version", key="copy_btn"):
             st.components.v1.html(f"""
-            <script>
-            navigator.clipboard.writeText("{after}");
-            </script>
+            <script>navigator.clipboard.writeText("{after}");</script>
             """, height=0)
             st.success("✅ Copied to clipboard!", icon="✅")
     
@@ -258,7 +229,7 @@ Suggestions:
         )
         st.markdown("🎓 **Free ATS Resume Template**: [Download Here](https://docs.google.com/document/d/1xyz)")
 
-# 📊 Admin Dashboard (Secure)
+# 📊 Admin Dashboard
 if st.sidebar.checkbox("🔐 Admin"):
     pwd = st.sidebar.text_input("Password", type="password")
     if pwd == ADMIN_PASSWORD:
@@ -267,8 +238,7 @@ if st.sidebar.checkbox("🔐 Admin"):
         st.sidebar.metric("💰 Paid Users", st.session_state.paid_users)
         if st.sidebar.button("🔄 Reset Stats"):
             for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result"]:
-                if key in st.session_state:
-                    del st.session_state[key]
+                st.session_state.pop(key, None)
             st.sidebar.success("✅ Stats reset!")
 
 # 📝 Footer
