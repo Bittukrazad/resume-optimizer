@@ -12,12 +12,17 @@ from utils import extract_text_from_pdf, extract_text_from_docx
 from resume_analyzer import analyze_resume
 from report_generator import generate_pdf_report
 import os
+import razorpay
 
-# 🔐 Load admin password securely
+# 🔐 Load credentials securely
 try:
     ADMIN_PASSWORD = st.secrets["admin"]["password"]
+    RAZORPAY_KEY = st.secrets["razorpay"]["key_id"]
+    RAZORPAY_SECRET = st.secrets["razorpay"]["key_secret"]
 except:
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "test123")
+    RAZORPAY_KEY = os.getenv("RAZORPAY_KEY_ID", "rzp_test_00000000000000")
+    RAZORPAY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
 # 🎨 Custom CSS
 st.markdown("""
@@ -41,6 +46,25 @@ if "paid_users" not in st.session_state:
     st.session_state.paid_users = 0
 if "payment_confirmed" not in st.session_state:
     st.session_state.payment_confirmed = False
+
+# 🔐 Check for payment verification on page load
+payment_id = st.query_params.get("payment_id")
+if payment_id and not st.session_state.payment_confirmed:
+    with st.spinner("✅ Verifying your payment..."):
+        try:
+            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
+            payment = client.payment.fetch(payment_id)
+            
+            if payment["status"] == "captured" and payment["amount"] >= 500:
+                st.session_state.payment_confirmed = True
+                st.session_state.paid_users += 1
+                # Clear the payment_id from URL
+                st.query_params.clear()
+                st.rerun()
+            else:
+                st.error(f"❌ Payment verification failed: {payment['status']}")
+        except Exception as e:
+            st.error(f"⚠️ Payment verification error: {e}")
 
 # 🏠 Header
 st.title("🚀 ResumeBoost AI")
@@ -86,57 +110,101 @@ if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container
     st.info(f"🎯 Detected Role: **{result['detected_role']}**")
     st.info("💡 *Free preview shows score only. Unlock full report with ₹5!*")
     st.session_state.reports_generated += 1
+
+# 💰 Razorpay Payment Section
+if "last_result" in st.session_state and not st.session_state.payment_confirmed:
+    st.markdown("---")
+    st.subheader("✨ Unlock Full Report (Only ₹5!)")
+    st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
     
-       # ---------------------------
-# 💰 Razorpay Payment (Standard Checkout)
-    if "last_result" in st.session_state and not st.session_state.payment_confirmed:
-        st.markdown("---")
-        st.subheader("✨ Unlock Full Report (Only ₹5!)")
-        st.caption("☕ Less than a cup of chai — get actionable ATS feedback!")
+    st.markdown("""
+    ✅ **You'll get**:  
+    - 🔍 Section-wise ATS scores  
+    - 🎯 Role-specific keyword gaps  
+    - ✨ AI rewrite suggestions  
+    - 📥 PDF report + ATS template  
+    """)
+    
+    # Generate Razorpay order
+    try:
+        client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
         
-        st.markdown("""
-        ✅ **You’ll get**:  
-        - 🔍 Section-wise ATS scores  
-        - 🎯 Role-specific keyword gaps  
-        - ✨ AI rewrite suggestions  
-        - 📥 PDF report + ATS template  
-        """)
+        order_data = {
+            "amount": 500,  # ₹5 in paise (500 paise = ₹5)
+            "currency": "INR",
+            "notes": {
+                "service": "resume_report",
+                "timestamp": datetime.now().isoformat()
+            }
+        }
         
-       # ✅ Razorpay Standard Checkout (Pre-filled ₹5)
-        st.markdown(f"""
-        <a href="https://rzp.io/rzp/v6xOQu0?amount=500&currency=INR&notes[service]=resume_report"
-           style="
-             display: inline-block;
-             background: #2563eb;
-             color: white;
-             padding: 12px 24px;
-             border-radius: 8px;
-             font-weight: bold;
-             text-decoration: none;
-             width: 100%;
-             text-align: center;
-           ">
-           💳 Pay ₹5 via Razorpay
-        </a>
+        order = client.order.create(data=order_data)
+        
+        # Get current URL for callback
+        current_url = st.query_params.get("_url", "")
+        callback_url = f"{current_url.split('?')[0]}" if current_url else ""
+        
+        # Razorpay Checkout Integration
+        st.components.v1.html(f"""
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <button id="rzp-button" style="
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        ">💳 Pay ₹5 via Razorpay</button>
+        
         <script>
-        // Auto-redirect after payment
-        const urlParams = new URLSearchParams(window.location.search);
-        const payment_id = urlParams.get('payment_id');
-        if (payment_id) {{
-            window.parent.location.href = window.parent.location.pathname + '?payment_id=' + payment_id;
-        }}
+        document.getElementById('rzp-button').onclick = function(e) {{
+            var options = {{
+                "key": "{RAZORPAY_KEY}",
+                "amount": "500",
+                "currency": "INR",
+                "name": "ResumeBoost AI",
+                "description": "Full Resume Analysis Report",
+                "order_id": "{order['id']}",
+                "handler": function(response) {{
+                    // Redirect back to Streamlit with payment ID
+                    const baseUrl = window.location.href.split('?')[0];
+                    window.location.href = baseUrl + "?payment_id=" + response.razorpay_payment_id;
+                }},
+                "prefill": {{
+                    "name": "",
+                    "email": "",
+                    "contact": ""
+                }},
+                "theme": {{
+                    "color": "#2563eb"
+                }},
+                "modal": {{
+                    "ondismiss": function() {{
+                        console.log("Payment cancelled by user");
+                    }}
+                }}
+            }};
+            var rzp = new Razorpay(options);
+            rzp.open();
+            e.preventDefault();
+        }};
         </script>
-        """, unsafe_allow_html=True)
+        """, height=60)
         
+    except Exception as e:
+        st.error(f"❌ Payment setup error: {e}")
+        st.info("💡 Please contact support if this issue persists.")
+
 # 🎉 Post-payment: Full Report
-if st.session_state.payment_confirmed:
-    # 🔗 ANCHOR FOR SCROLL
+if st.session_state.payment_confirmed and "last_result" in st.session_state:
     st.markdown('<div id="full-report"></div>', unsafe_allow_html=True)
     st.balloons()
-    st.success("🎉 Payment confirmed! Here’s your full report:")
+    st.success("🎉 Payment confirmed! Here's your full report:")
     
     result = st.session_state.last_result
-    st.session_state.paid_users += 1
     
     tab1, tab2, tab3, tab4 = st.tabs(["🎯 Summary", "🔍 Gaps", "✨ Rewrite", "📥 Download"])
     
@@ -176,10 +244,7 @@ if st.session_state.payment_confirmed:
         st.text_area("After (ATS-Optimized)", after, height=70, disabled=True)
         
         if st.button("📋 Copy Optimized Version", key="copy_btn"):
-            st.components.v1.html(f"""
-            <script>navigator.clipboard.writeText("{after}");</script>
-            """, height=0)
-            st.success("✅ Copied to clipboard!", icon="✅")
+            st.success("✅ Select and copy the text above!")
     
     with tab4:
         st.subheader("📥 Download Your Report")
@@ -226,8 +291,8 @@ if st.sidebar.checkbox("🔐 Admin"):
             for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result"]:
                 st.session_state.pop(key, None)
             st.sidebar.success("✅ Stats reset!")
-                       
- # ================== LEGAL PAGES ==================
+
+# ================== LEGAL PAGES ==================
 
 st.sidebar.markdown("### 📘 Legal & Support")
 
@@ -260,7 +325,6 @@ By using our website and services, you agree to the following terms:
 7. Disputes, if any, will be handled under Jaipur, Rajasthan jurisdiction.
 
 If you disagree with these terms, you may discontinue using the service.
-
     """)
 
 elif page == "Privacy Policy":
@@ -307,8 +371,6 @@ Razorpay may collect the minimum required transaction information.
 Since we do not store any personal data, there is nothing to retrieve, modify, or delete.
 
 For general privacy queries, contact us anytime.
-
-
     """)
 
 elif page == "Refund & Cancellation Policy":
@@ -336,7 +398,6 @@ Refunds take **5–7 working days** to process.
 
 ## Important Note
 As we do NOT store resumes or personal data, we cannot retrieve previously processed files.
-
     """)
 
 elif page == "Contact Us":
@@ -350,29 +411,6 @@ elif page == "Contact Us":
 
     Response time: within 24–48 hours.
     """)
-
-   # 🔐 Razorpay Payment Verification (Auto-unlock)
-payment_id = st.query_params.get("payment_id")
-if payment_id and not st.session_state.payment_confirmed:
-    with st.spinner("✅ Verifying payment with Razorpay..."):
-        try:
-            # Initialize client (safe with test keys)
-            RAZORPAY_KEY = "rzp_test_00000000000000"  # Public test key (safe to commit)
-            RAZORPAY_SECRET = "XXXXXXXXXXXXXXXX"     # Dummy (not used in client-side verify)
-            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
-            
-            # Verify payment
-            payment = client.payment.fetch(payment_id)
-            if payment["status"] == "captured" and payment["amount"] == 500:
-                st.session_state.payment_confirmed = True
-                st.session_state.paid_users += 1
-                st.success("🎉 ₹5 payment verified! Generating your full report...")
-                st.rerun()
-            else:
-                st.error(f"❌ Payment failed: {payment['status']}")
-        except Exception as e:
-            st.error(f"⚠️ Verification failed: {e}")
-           
 
 # 📝 Footer
 st.markdown("---")
