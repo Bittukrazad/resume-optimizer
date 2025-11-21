@@ -101,7 +101,6 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     - 📥 PDF report + ATS template  
     """)
     
-if st.button("📲 Pay ₹5 via UPI", type="primary", use_container_width=True):
        # ---------------------------
 # 💰 Razorpay Payment (Standard Checkout)
     if "last_result" in st.session_state and not st.session_state.payment_confirmed:
