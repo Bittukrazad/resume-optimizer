@@ -258,53 +258,98 @@ page = st.sidebar.radio(
 if page == "Terms & Conditions":
     st.title("📘 Terms & Conditions")
     st.markdown("""
-    1. Our platform provides AI-powered resume analysis and suggestions.
-    2. We DO NOT collect, store, or save any resume or personal data. Files are processed temporarily in-memory only.
-    3. All documents are deleted automatically after analysis.
-    4. Payments are non-transferable and service is delivered instantly.
-    5. Misuse or fraudulent activity may result in service denial.
-    6. Disputes fall under Jaipur, Rajasthan jurisdiction.
+    # Terms & Conditions
+
+Welcome to ResumeBoost AI.
+
+By using our website and services, you agree to the following terms:
+
+1. Our platform provides resume analysis, resume optimization, and AI-based improvement suggestions.
+2. We DO NOT collect, store, or save any resumes or personal data. All uploaded files are processed temporarily in-memory and automatically deleted after analysis.
+3. Users are responsible for ensuring the correctness of the documents they upload.
+4. Payments made for AI-based analysis are final and non-transferable.
+5. Any misuse, abusive activity, or fraudulent behavior may result in denial of service.
+6. As services are digital and delivered instantly, cancellations or reversals are not applicable.
+7. Disputes, if any, will be handled under Jaipur, Rajasthan jurisdiction.
+
+If you disagree with these terms, you may discontinue using the service.
+
     """)
 
 elif page == "Privacy Policy":
     st.title("🔒 Privacy Policy")
     st.markdown("""
-    ## No Data Collection
-    We DO NOT collect or store:
-    - Resume contents  
-    - Personal details  
-    - Email, phone, contact data  
-    - Uploaded documents  
+    # Privacy Policy
 
-    All resumes are processed **temporarily in memory** and deleted instantly after analysis.
+ResumeBoost AI values your privacy and follows a strict "No Data Collection, No Data Storage" policy.
 
-    ## Payment Privacy
-    We do NOT store any payment details.
+## Information We Collect
+We DO NOT collect:
+- Personal details
+- Resume contents
+- User profile data
+- Contact data
+- Uploaded documents
 
-    All payments are securely handled by **Razorpay**, following RBI guidelines.
+All files uploaded (such as resumes) are processed **temporarily in-memory only**.  
+They are **never saved**, **never stored**, **never logged**, and **automatically deleted** after generating results.
 
-    ## Third-party
-    Razorpay may collect minimum transaction data for processing.
+## Payment Data
+We do NOT store any payment information.
 
-    We store **zero** personal data.
+All payment-related data (UPI, card, bank details) is handled securely by **Razorpay**, in accordance with RBI guidelines.  
+We never have access to your bank details.
+
+## How We Use Your Data
+Since we do not store data, usage is limited to:
+- Temporary processing of resumes
+- Generating AI-based optimization results
+
+## Data Storage
+We store **nothing**:
+- No databases
+- No resume storage
+- No profiling
+- No logs containing personal data
+
+## Third-Party Services
+We use Razorpay solely for secure payment processing.
+Razorpay may collect the minimum required transaction information.
+
+## User Rights
+Since we do not store any personal data, there is nothing to retrieve, modify, or delete.
+
+For general privacy queries, contact us anytime.
+
 
     """)
 
 elif page == "Refund & Cancellation Policy":
     st.title("💳 Refund & Cancellation Policy")
     st.markdown("""
-    ## Cancellations
-    This is a digital service delivered instantly — cancellations are not possible.
+    # Refund & Cancellation Policy
 
-    ## Refunds
-    Refunds are only allowed for:
-    - Duplicate payment  
-    - Payment deducted but service not received  
+Thank you for using ResumeBoost AI.
 
-    Refund processing time: **5–7 business days**.
+## Cancellation
+Our service is digital and delivered instantly.  
+Once a payment is completed, cancellations are not possible.
 
-    ## Important Note  
-    As we do NOT store resumes, we cannot recover previous analysis reports.
+## Refunds
+We follow a **No Refund Policy**, except in special cases:
+1. Duplicate payment
+2. Payment deducted but service not delivered due to technical error
+
+To request a refund, please provide:
+- Payment ID
+- Transaction screenshot
+- Email or phone number used during payment
+
+Refunds take **5–7 working days** to process.
+
+## Important Note
+As we do NOT store resumes or personal data, we cannot retrieve previously processed files.
+
     """)
 
 elif page == "Contact Us":
