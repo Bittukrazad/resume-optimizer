@@ -1,16 +1,28 @@
-# Force-install order for Streamlit Cloud
---no-deps
+# Compatible & stable versions for Streamlit Cloud
+
 huggingface_hub==0.12.1
 sentence-transformers==2.2.2
 transformers==4.36.0
 torch==2.1.2
+
+# Streamlit-compatible rich version (<14)
 rich==13.7.1
 streamlit==1.39.0
+
+# PDF & document processing
 python-docx==1.1.2
 pypdf2==3.0.1
+fpdf2==2.7.9
+
+# ML packages
 scikit-learn==1.3.0
 numpy==1.24.4
+pandas==2.0.3
+
+# Misc
 razorpay==1.4.1
 python-dotenv==1.0.1
-pandas==2.0.3
-fpdf2==2.7.9
+
+# Prevent breaking markdown dependencies
+markdown-it-py==2.2.0
+mdurl==0.1.2
