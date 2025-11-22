@@ -1,8 +1,10 @@
-# Pre-download model to avoid silent hang during deploy
-print("📥 Pre-downloading sentence-transformers model...")
-from sentence_transformers import SentenceTransformer
-SentenceTransformer('all-MiniLM-L6-v2', cache_folder="./model_cache")
-print("✅ Model cached!")
+# Pre-download model during deploy (prevents 10-min timeout)
+import os
+if not os.path.exists("./model_cache/all-MiniLM-L6-v2"):
+    print("📥 Pre-downloading sentence-transformers model...")
+    from sentence_transformers import SentenceTransformer
+    SentenceTransformer('all-MiniLM-L6-v2', cache_folder="./model_cache", device="cpu")
+    print("✅ Model cached!")
 
 import streamlit as st
 import time
