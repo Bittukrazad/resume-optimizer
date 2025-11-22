@@ -130,6 +130,8 @@ def analyze_resume(resume_text: str, job_desc: str):
         tech_str = ", ".join(top_tech) if top_tech else "Python and relevant tools"
         rewrite = f"Designed and implemented a {detected_role}-aligned solution using {tech_str} with quantifiable results."
     
+       # ... [existing code] ...
+
     # 7. Suggestions
     suggestions = []
     if len(missing) > 0:
@@ -138,11 +140,15 @@ def analyze_resume(resume_text: str, job_desc: str):
         suggestions.append("🛠️ Projects need metrics! Add: 'Improved X by Y%'")
     if ats_score < 70:
         suggestions.append("🎯 Target ATS Score: 80+ → add 2–3 keywords + 1 metric")
-        
+
+    # ✅ ADD extra_keywords HERE (before return)
+    extra_keywords = sorted(resume_keywords - jd_keywords)
+
     return {
         "ats_score": ats_score,
         "section_scores": section_scores,
         "missing_keywords": missing,
+        "extra_keywords": extra_keywords,  # ✅ Also add this to the returned dict
         "detected_role": detected_role,
         "suggestions": suggestions,
         "weak_bullet": weak_bullets[0]["original"] if weak_bullets else "Built a project.",
