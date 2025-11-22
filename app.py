@@ -231,16 +231,30 @@ if st.session_state.payment_confirmed:
             """, unsafe_allow_html=True)
     
     with tab2:
-        st.subheader("🔑 Keyword Gap Analysis")
-        if result["missing_keywords"]:
+        st.subheader("🔍 Keyword Gap Analysis")
+        
+        # ✅ SAFE: Use .get() with fallbacks
+        missing = result.get("missing_keywords", [])
+        extra = result.get("extra_keywords", [])
+        
+        if missing:
             st.write("Add these to boost your score:")
-            keywords_html = "".join([f"<span class='keyword-tag missing-tag'>{kw}</span>" for kw in result["missing_keywords"][:8]])
+            keywords_html = "".join([
+                f"<span class='keyword-tag missing-tag'>{kw}</span>" 
+                for kw in missing[:8]
+            ])
             st.markdown(keywords_html, unsafe_allow_html=True)
-        if result.get("extra_keywords"):
+        else:
+            st.info("✅ Perfect alignment! No missing keywords found.")
+        
+        if extra:
             st.write("Good extras (keep these!):")
-            extras_html = "".join([f"<span class='keyword-tag'>{kw}</span>" for kw in result["extra_keywords"][:5]])
+            extras_html = "".join([
+                f"<span class='keyword-tag'>{kw}</span>" 
+                for kw in extra[:5]
+            ])
             st.markdown(extras_html, unsafe_allow_html=True)
-    
+        
     with tab3:
         st.subheader("✨ AI Rewrite Suggestion")
         
