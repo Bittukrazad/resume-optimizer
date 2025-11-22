@@ -49,56 +49,6 @@ if "payment_confirmed" not in st.session_state:
 
 # 🔐 Check for payment verification on page load
 # This handles the redirect from Razorpay Payment Page
-payment_id = st.query_params.get("payment_id")
-payment_status = st.query_params.get("payment_status")
-
-# Check if returning from successful payment
-if payment_id and not st.session_state.payment_confirmed:
-    # Verify payment with Razorpay automatically
-    with st.spinner("✅ Verifying your payment with Razorpay..."):
-        time.sleep(0.5)
-        try:
-            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
-            payment = client.payment.fetch(payment_id)
-            
-            if payment["status"] == "captured" and payment["amount"] >= 500:
-                # Payment successful - unlock full report
-                st.session_state.payment_confirmed = True
-                st.session_state.paid_users += 1
-                st.session_state.payment_id = payment_id
-                st.session_state.payment_timestamp = datetime.now().isoformat()
-                
-                # Check if we have analysis result
-                if "last_result" not in st.session_state:
-                    # Payment verified but no analysis data - store payment for later
-                    st.session_state.pending_payment_unlock = True
-                    st.balloons()
-                    st.success("🎉 Payment Successful!")
-                    st.info("💡 Please upload and analyze your resume below to unlock your full report.")
-                    st.query_params.clear()
-                else:
-                    # Payment verified and analysis exists - unlock immediately
-                    st.query_params.clear()
-                    st.balloons()
-                    st.success("🎉 Payment verified successfully! Unlocking your full report...")
-                    time.sleep(1)
-                    st.rerun()
-            
-            elif payment["status"] == "failed":
-                st.error("❌ Payment failed. Please try again.")
-                st.query_params.clear()
-            
-            else:
-                st.warning(f"⚠️ Payment status: {payment['status']}")
-                st.info("If money was deducted, please contact support:")
-                st.info(f"📧 Email: bittukrazad652@gmail.com\n💳 Payment ID: {payment_id}")
-                st.query_params.clear()
-                
-        except Exception as e:
-            st.error(f"⚠️ Payment verification error: {str(e)}")
-            st.info(f"💡 If payment was successful, contact support with:")
-            st.code(f"Payment ID: {payment_id}\nEmail: bittukrazad652@gmail.com")
-            st.query_params.clear()
 
 # 🏠 Header
 st.title("🚀 ResumeBoost AI")
@@ -170,29 +120,59 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
     </div>
     """, unsafe_allow_html=True)
     
-    # Direct redirect to Razorpay Payment Page
+    # Enhanced Razorpay button with auto-redirect handler
     st.markdown("""
-    <a href="https://rzp.io/rzp/v6xOQu0" target="_blank" style="
+    <a href="https://rzp.io/rzp/v6xOQu0" target="_blank" id="razorpay-btn" style="
         display: block;
         background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
         color: white;
         padding: 18px 32px;
         border-radius: 12px;
-        border: none;
         font-weight: bold;
-        cursor: pointer;
         width: 100%;
         font-size: 20px;
         box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
         text-align: center;
         text-decoration: none;
-    " onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 12px 28px rgba(239, 68, 68, 0.5)';" 
-       onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 8px 20px rgba(239, 68, 68, 0.4)';">
-        💳 PAY ONLY ₹5 NOW
-    </a>
+    ">💳 PAY ONLY ₹5 NOW</a>
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+    document.getElementById('razorpay-btn').onclick = function(e) {
+        e.preventDefault();
+        
+        // Open Razorpay checkout in same tab (not new tab)
+        window.location.href = 'https://rzp.io/rzp/v6xOQu0';
+        
+        // Listen for messages from Razorpay (when redirected back)
+        const handleMessage = (event) => {
+            if (event.data && event.data.payment_id) {
+                const url = new URL(window.location);
+                url.searchParams.set('payment_id', event.data.payment_id);
+                window.location = url.toString();
+            }
+        };
+        
+        // Try to add listener (for future redirects)
+        try {
+            window.addEventListener('message', handleMessage);
+        } catch (e) {}
+    };
+    
+    // Also check URL hash on page load (for QR payments)
+    window.addEventListener('load', () => {
+        const hash = window.location.hash;
+        if (hash.includes('payment_id=')) {
+            const payment_id = new URLSearchParams(hash.substring(1)).get('payment_id');
+            if (payment_id) {
+                const url = new URL(window.location);
+                url.searchParams.set('payment_id', payment_id);
+                url.hash = '';
+                window.history.replaceState(null, '', url);
+            }
+        }
+    });
+    </script>
     
     <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 8px; border: 2px dashed #f59e0b;">
         <p style="margin: 0; color: #92400e; font-weight: bold; font-size: 14px;">
@@ -428,6 +408,34 @@ elif page == "Contact Us":
 
     Response time: within 24–48 hours.
     """)
+    
+# 🔐 Auto-unlock after Razorpay redirect
+payment_id = st.query_params.get("payment_id")
+
+if payment_id and not st.session_state.payment_confirmed:
+    st.session_state.pending_verification = True
+    with st.spinner("✅ Verifying your ₹5 payment..."):
+        try:
+            client = razorpay.Client(auth=(RAZORPAY_KEY, RAZORPAY_SECRET))
+            payment = client.payment.fetch(payment_id)
+            
+            if payment["status"] == "captured" and payment["amount"] >= 500:
+                st.session_state.payment_confirmed = True
+                st.session_state.paid_users += 1
+                st.session_state.payment_id = payment_id
+                
+                st.balloons()
+                st.success("🎉 Payment verified! Unlocking your full report...")
+                time.sleep(1)
+                st.query_params.clear()  # Clean URL
+                st.rerun()
+            else:
+                st.error(f"❌ Payment {payment['status']}. Amount: ₹{payment['amount']/100}")
+                st.query_params.clear()
+                
+        except Exception as e:
+            st.error(f"⚠️ Verification failed: {e}")
+            st.query_params.clear()
 
 # 📝 Footer
 st.markdown("---")
