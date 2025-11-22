@@ -244,34 +244,30 @@ if st.session_state.payment_confirmed:
     with tab3:
         st.subheader("✨ AI Rewrite Suggestion")
         
+        # Get data from session state
+        result = st.session_state.last_result
+        job_desc = st.session_state.job_desc  # ✅ Now accessible
+        
         bullets = result.get("weak_bullets", [])
         tech = result.get("tech_stack", ["Python"])
         metric = result.get("metric", "measurable impact")
         
         if bullets:
             before = bullets[0]
-            # Intelligent rewrite template
             action = "Developed" if "ml" in job_desc.lower() else "Built"
-            tech_str = ", ".join(tech[:2]) if len(tech) > 1 else tech[0] if tech else "relevant technologies"
-            
+            tech_str = ", ".join(tech[:2]) if len(tech) > 1 else tech[0]
             after = f"{action} a {result['detected_role']} solution using {tech_str}, achieving {metric}."
         else:
-            # Fallback for minimal resumes
             before = "Built a project."
             after = f"Designed and implemented a {result['detected_role']}-aligned solution with quantifiable results."
         
         st.text_area("Before (Weak)", before, height=70, disabled=True)
         st.text_area("After (ATS-Optimized)", after, height=70, disabled=True)
         
-        if st.button("📋 Copy Optimized Version", key="copy_btn"):
-            st.components.v1.html(f"""
-            <script>navigator.clipboard.writeText("{after}");</script>
-            """, height=0)
+        if st.button("📋 Copy Optimized Version", key="copy_btn_rewrite"):  # ✅ Unique key
+            st.components.v1.html(f'<script>navigator.clipboard.writeText("{after}");</script>', height=0)
             st.success("✅ Copied to clipboard!", icon="✅")
-            
-            
-            if st.button("📋 Copy Optimized Version", key="copy_btn"):
-                st.success("✅ Select and copy the text above!")
+        
     
     with tab4:
         st.subheader("📥 Download Your Report")
