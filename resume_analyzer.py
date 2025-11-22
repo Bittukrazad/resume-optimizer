@@ -138,7 +138,7 @@ def analyze_resume(resume_text: str, job_desc: str):
         suggestions.append("🛠️ Projects need metrics! Add: 'Improved X by Y%'")
     if ats_score < 70:
         suggestions.append("🎯 Target ATS Score: 80+ → add 2–3 keywords + 1 metric")
-
+        
     return {
         "ats_score": ats_score,
         "section_scores": section_scores,
