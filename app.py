@@ -1,11 +1,38 @@
 # Pre-download model during build
 import os
-if not os.path.exists("./model_cache"):
-    os.makedirs("./model_cache", exist_ok=True)
-    print("📥 Pre-downloading sentence-transformers model...")
+MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_CACHE_DIR = "./model_cache"
+
+# Run only once during build (not on every rerun)
+if not os.path.exists(os.path.join(MODEL_CACHE_DIR, MODEL_NAME)):
+    try:
+        os.makedirs(MODEL_CACHE_DIR, exist_ok=True)
+        print("Pre-downloading SentenceTransformer model...")
+
+        from sentence_transformers import SentenceTransformer
+        SentenceTransformer(
+            MODEL_NAME,
+            cache_folder=MODEL_CACHE_DIR,
+            device="cpu"
+        )
+
+        print("Model cached successfully!")
+
+    except Exception as e:
+        print(f"Model download failed (will load at runtime): {e}")
+
+import streamlit as st
+
+# Streamlit runtime model loader (cached)
+@st.cache_resource
+def load_model():
     from sentence_transformers import SentenceTransformer
-    SentenceTransformer('all-MiniLM-L6-v2', cache_folder="./model_cache", device="cpu")
-    print("✅ Model cached!")
+    return SentenceTransformer(
+        MODEL_NAME,
+        cache_folder=MODEL_CACHE_DIR,
+        device="cpu"
+    )
+
 
 import streamlit as st
 import time
