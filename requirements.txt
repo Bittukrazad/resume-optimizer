@@ -1,7 +1,6 @@
 streamlit==1.39.0
 python-docx==1.1.2
 pypdf2==3.0.1
-# Pin to huggingface_hub <0.13.0
 huggingface_hub==0.12.1
 sentence-transformers==2.2.2
 transformers==4.36.0
