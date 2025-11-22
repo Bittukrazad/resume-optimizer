@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import parse_resume_sections
@@ -9,7 +10,13 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        _model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder="./model_cache")
+        # Force CPU mode for Streamlit Cloud
+        device = "cpu"
+        _model = SentenceTransformer(
+            'all-MiniLM-L6-v2',
+            cache_folder="./model_cache",
+            device=device
+        )
     return _model
 
 def analyze_resume(resume_text: str, job_desc: str):
