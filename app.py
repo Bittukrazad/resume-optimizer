@@ -1,17 +1,16 @@
-# Pre-download model safely
+# Pre-download model during build
 import os
 from sentence_transformers import SentenceTransformer
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-CACHE_DIR = "./model_cache"
-
-if not os.path.exists(CACHE_DIR):
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    print("📥 Pre-downloading sentence-transformers model...")
-    model = SentenceTransformer(MODEL_NAME, cache_folder=CACHE_DIR, device="cpu")
+if not os.path.exists("./model_cache"):
+    os.makedirs("./model_cache", exist_ok=True)
+    print("📥 Pre-downloading model...")
+    model = SentenceTransformer(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        cache_folder="./model_cache"
+    )
     print("✅ Model cached!")
-else:
-    print("📦 Model already cached.")
+
 
 import streamlit as st
 import time
