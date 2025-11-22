@@ -1,64 +1,110 @@
 # report_generator.py — NEW FILE
 
 from fpdf import FPDF
+import re
 import os
 
-def generate_pdf_report(result, resume_filename="resume"):
+def clean_text(text):
+    """Sanitize text for PDF compatibility (remove unsupported Unicode)"""
+    if not isinstance(text, str):
+        text = str(text)
+    # Replace en-dash, em-dash, smart quotes
+    text = (text
+        .replace('–', '-')    # en-dash → hyphen
+        .replace('—', '-')    # em-dash → hyphen
+        .replace('’', "'")    # right single quote
+        .replace('‘', "'")    # left single quote
+        .replace('“', '"')    # left double quote
+        .replace('”', '"')    # right double quote
+        .replace('…', '...')  # ellipsis
+    )
+    return text
+
+def generate_pdf_report(result, resume_filename="student"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Header
+    # Use built-in fonts (no external files needed)
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, "ResumeBoost AI – Full Report", ln=True, align="C")
+    
+    # Header
+    pdf.cell(0, 10, clean_text("ResumeBoost AI – Full Report"), ln=True, align="C")
     pdf.ln(5)
     
     # ATS Score
     pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(0, 100, 0) if result['ats_score'] >= 70 else pdf.set_text_color(200, 0, 0)
-    pdf.cell(200, 10, f"🎯 ATS Score: {result['ats_score']}/100", ln=True, align="C")
+    score_color = (0, 100, 0) if result['ats_score'] >= 70 else (180, 0, 0)
+    pdf.set_text_color(*score_color)
+    pdf.cell(0, 10, clean_text(f"🎯 ATS Score: {result['ats_score']}/100"), ln=True, align="C")
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
     
     # Role
     pdf.set_font("Arial", "", 12)
-    pdf.cell(200, 10, f"🔍 Target Role: {result['detected_role']}", ln=True, align="C")
+    pdf.cell(0, 10, clean_text(f"🔍 Target Role: {result.get('detected_role', 'General')}"), ln=True, align="C")
     pdf.ln(10)
     
-    # Keyword Gap
+    # Keyword Gap (safely handle missing data)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(200, 10, "❌ Missing Keywords", ln=True)
+    pdf.cell(0, 10, "❌ Missing Keywords", ln=True)
     pdf.set_font("Arial", "", 11)
-    for kw in result['missing_keywords'][:5]:
-        pdf.cell(200, 8, f"• {kw}", ln=True)
+    
+    missing = result.get('missing_keywords', [])
+    if missing:
+        for kw in missing[:8]:  # Show up to 8
+            pdf.cell(0, 8, f"• {clean_text(kw)}", ln=True)
+    else:
+        pdf.cell(0, 8, "✅ None detected — great job!", ln=True)
     pdf.ln(5)
     
     # Section Scores
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(200, 10, "📊 Section-wise Feedback", ln=True)
+    pdf.cell(0, 10, "📊 Section-wise Feedback", ln=True)
     pdf.set_font("Arial", "", 11)
-    for sec, score in result['section_scores'].items():
-        status = "✅ Good" if score >= 70 else "⚠️ Needs Work"
-        pdf.cell(200, 8, f"- {sec.title()}: {score}/100 ({status})", ln=True)
+    
+    sections = result.get('section_scores', {})
+    if sections:
+        for sec, score in sections.items():
+            status = "✅ Good" if score >= 70 else "⚠️ Needs Work"
+            pdf.cell(0, 8, f"- {clean_text(sec.title())}: {score}/100 ({status})", ln=True)
+    else:
+        pdf.cell(0, 8, "ℹ️ Section analysis unavailable", ln=True)
     pdf.ln(10)
     
-    # AI Rewrite Example
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(200, 10, "✨ Suggested Rewrite", ln=True)
-    pdf.set_font("Arial", "", 11)
-    before = "Built a machine learning model."
-    after = f"Developed a {result['detected_role']} solution using Python, achieving measurable impact."
-    pdf.cell(200, 8, f"Before: {before}", ln=True)
+    # AI Rewrite Example (dynamic)
+    before = result.get("weak_bullets", ["Built a project."])[0]
+    tech = ", ".join(result.get("tech_stack", ["Python"])[:2])
+    metric = result.get("metric", "measurable impact")
+    role = result.get("detected_role", "AI")
+    
+    after = f"Developed a {role} solution using {tech}, achieving {metric}."
+    pdf.cell(0, 8, f"Before: {clean_text(before)}", ln=True)
     pdf.set_text_color(0, 100, 0)
-    pdf.cell(200, 8, f"After:  {after}", ln=True)
+    pdf.cell(0, 8, f"After:  {clean_text(after)}", ln=True)
     pdf.set_text_color(0, 0, 0)
+        
+    # Suggestions
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "💡 Actionable Tips", ln=True)
+    pdf.set_font("Arial", "", 11)
+    
+    suggestions = result.get('suggestions', [
+        "✅ Add quantifiable metrics (e.g., 'Improved accuracy by 12%')",
+        "🛠️ Use standard section headers (Skills, Projects, Education)",
+        "📝 Expand project descriptions with technologies used"
+    ])
+    
+    for i, sug in enumerate(suggestions[:5], 1):
+        pdf.cell(0, 8, f"{i}. {clean_text(sug)}", ln=True)
     
     # Footer
-    pdf.ln(20)
+    pdf.ln(15)
     pdf.set_font("Arial", "I", 10)
-    pdf.cell(200, 10, "Generated by ResumeBoost AI — Made for AIML Students", ln=True, align="C")
+    pdf.cell(0, 10, "Generated by ResumeBoost AI • Made for AIML Students", ln=True, align="C")
+    pdf.cell(0, 5, "🔒 No resume data stored • Payment verified via Razorpay", ln=True, align="C")
     
     # Save
-    filename = f"report_{resume_filename}.pdf"
+    filename = f"report_{resume_filename}_{result['ats_score']}.pdf"
     pdf.output(filename)
     return filename
