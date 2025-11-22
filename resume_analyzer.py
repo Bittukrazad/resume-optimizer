@@ -10,7 +10,8 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        # Force CPU mode for Streamlit Cloud
+        # Ensure cache dir exists
+        os.makedirs("./model_cache", exist_ok=True)
         device = "cpu"
         _model = SentenceTransformer(
             'all-MiniLM-L6-v2',
