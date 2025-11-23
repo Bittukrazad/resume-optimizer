@@ -8,6 +8,13 @@ def clean_text_for_pdf(text):
     if not isinstance(text, str):
         text = str(text)
     
+    # AGGRESSIVE: First convert to ASCII-compatible encoding
+    try:
+        # Try to encode as ASCII, replacing errors
+        text = text.encode('ascii', 'ignore').decode('ascii')
+    except:
+        pass
+    
     # Emoji replacements → plain text
     emoji_map = {
         "🎯": "[TARGET]",
@@ -119,7 +126,10 @@ def generate_pdf_report(result, resume_filename="student"):
         
         # =============== HEADER ===============
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, clean_text_for_pdf("ResumeBoost AI - Full Report"), ln=True, align="C")
+        header_text = "ResumeBoost AI - Full Report"
+        # Extra safety: manually replace known problematic chars
+        header_text = header_text.replace("—", "-").replace("–", "-")
+        pdf.cell(0, 10, clean_text_for_pdf(header_text), ln=True, align="C")
         pdf.ln(5)
         
         # =============== ATS SCORE ===============
@@ -133,8 +143,9 @@ def generate_pdf_report(result, resume_filename="student"):
         
         # =============== ROLE ===============
         pdf.set_font("Arial", "", 12)
-        role = result.get('detected_role', 'General')
-        pdf.cell(0, 10, clean_text_for_pdf(f"Target Role: {role}"), ln=True, align="C")
+        role = clean_text_for_pdf(str(result.get('detected_role', 'General')))
+        role_text = f"Target Role: {role}"
+        pdf.cell(0, 10, clean_text_for_pdf(role_text), ln=True, align="C")
         pdf.ln(10)
         
         # =============== KEYWORD GAPS ===============
@@ -145,7 +156,9 @@ def generate_pdf_report(result, resume_filename="student"):
         missing = result.get('missing_keywords', [])
         if missing:
             for kw in missing[:8]:
-                pdf.cell(0, 8, clean_text_for_pdf(f"* {kw}"), ln=True)
+                # Clean each keyword individually
+                clean_kw = clean_text_for_pdf(str(kw))
+                pdf.cell(0, 8, f"* {clean_kw}", ln=True)
         else:
             pdf.cell(0, 8, "[OK] None detected - great job!", ln=True)
         pdf.ln(5)
@@ -159,7 +172,9 @@ def generate_pdf_report(result, resume_filename="student"):
         if sections:
             for sec, score_val in sections.items():
                 status = "[OK] Good" if score_val >= 70 else "[X] Needs Work"
-                line = f"- {sec.title()}: {score_val}/100 ({status})"
+                # Clean section name and entire line
+                sec_clean = clean_text_for_pdf(str(sec))
+                line = f"- {sec_clean.title()}: {score_val}/100 ({status})"
                 pdf.cell(0, 8, clean_text_for_pdf(line), ln=True)
         else:
             pdf.cell(0, 8, "[INFO] Section analysis unavailable", ln=True)
@@ -227,3 +242,4 @@ def generate_pdf_report(result, resume_filename="student"):
         filename = f"report_error_{resume_filename}.pdf"
         pdf.output(filename)
         return filename
+      
