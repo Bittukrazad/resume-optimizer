@@ -1,17 +1,16 @@
+import os
+import re
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import parse_resume_sections
-import re
-import os  
 
 _model = None
 
 def get_model():
     global _model
     if _model is None:
-        # Ensure cache dir exists
         os.makedirs("./model_cache", exist_ok=True)
         device = "cpu"
         _model = SentenceTransformer(
@@ -21,7 +20,7 @@ def get_model():
         )
     return _model
 
-def analyze_resume(resume_text: str, job_desc: str):
+def analyze_resume(resume_text, job_desc):
     model = get_model()
     
     # 1. Overall ATS Score
@@ -43,14 +42,10 @@ def analyze_resume(resume_text: str, job_desc: str):
     
     # 3. Keyword Analysis
     tech_keywords = {
-        # Core CS
         'python', 'java', 'c++', 'sql', 'linux', 'git', 'github', 'docker', 'aws', 'azure', 'gcp',
-        # Web
         'html', 'css', 'javascript', 'react', 'nodejs', 'flask', 'django', 'rest', 'api',
-        # AIML
         'machine learning', 'deep learning', 'ai', 'nlp', 'cv', 'tensorflow', 'pytorch', 'scikit-learn',
         'pandas', 'numpy', 'matplotlib', 'seaborn', 'bert', 'transformers',
-        # DSA/System Design
         'dsa', 'algorithms', 'data structures', 'system design', 'oops', 'dbms', 'os', 'networking'
     }
     
@@ -75,37 +70,30 @@ def analyze_resume(resume_text: str, job_desc: str):
             detected_role = role
             break
     
-    # 5. Extract Weak Bullet Points (for dynamic rewrites)
+    # 5. Extract Weak Bullet Points
     weak_bullets = []
     projects_text = sections.get("projects", "")
-    
-    # Split by common bullet separators
     bullets = re.split(r'[•●-]\s*|\n\s*\d+\.\s*|\n\s*[-*]\s*', projects_text)
     
     for bullet in bullets:
         bullet = bullet.strip()
         if not bullet or len(bullet) < 20:
             continue
-            
-        # Detect weak patterns
         weak_phrases = [
             "built ", "worked on", "did ", "made ", "created ", 
             "developed a", "implemented a", "designed a"
         ]
         if any(phrase in bullet.lower() for phrase in weak_phrases) and len(bullet) < 80:
-            # Extract tech stack from this bullet
             tech_in_bullet = [kw for kw in tech_keywords if kw in bullet.lower()]
             weak_bullets.append({
                 "original": bullet,
-                "tech": tech_in_bullet[:3]  # Top 3 tech from bullet
+                "tech": tech_in_bullet[:3]
             })
     
     # 6. Generate Dynamic Rewrite
     if weak_bullets:
         bullet = weak_bullets[0]
         tech_str = ", ".join(bullet["tech"]) if bullet["tech"] else "relevant technologies"
-        
-        # Role-specific action verbs
         action_verbs = {
             "SDE": "Engineered",
             "Data Scientist": "Developed",
@@ -115,7 +103,6 @@ def analyze_resume(resume_text: str, job_desc: str):
         }
         action = action_verbs.get(detected_role, "Developed")
         
-        # Smart metric selection
         if "ml" in job_desc.lower() or "ai" in job_desc.lower() or "nlp" in job_desc.lower():
             metric = "92% accuracy"
         elif "web" in job_desc.lower() or "react" in job_desc.lower():
@@ -124,10 +111,8 @@ def analyze_resume(resume_text: str, job_desc: str):
             metric = "50% faster deployments"
         else:
             metric = "measurable improvement"
-            
         rewrite = f"{action} a {detected_role} solution using {tech_str}, achieving {metric}."
     else:
-        # Fallback for minimal resumes
         top_tech = list(resume_keywords)[:2]
         tech_str = ", ".join(top_tech) if top_tech else "Python and relevant tools"
         rewrite = f"Designed and implemented a {detected_role}-aligned solution using {tech_str} with quantifiable results."
