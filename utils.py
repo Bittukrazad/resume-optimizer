@@ -12,75 +12,57 @@ logger = logging.getLogger(__name__)
 
 SECTION_HEADERS = {
     "summary": ["summary", "professional summary", "career summary", "objective"],
-    "skills": ["skills", "technical skills", "skills & tools", "core competencies"],
+    "skills": ["skills", "technical skills", "skills & tools", "core competencies", "tech stack"],
     "experience": ["experience", "work experience", "professional experience", "employment history"],
-    "projects": ["projects", "academic projects", "personal projects"],
+    "projects": ["projects", "academic projects", "personal projects", "technical projects"],
     "education": ["education", "academic background", "qualifications"],
-    "certifications": ["certifications", "courses", "licenses"],
-    "achievements": ["achievements", "awards", "accomplishments"],
+    "certifications": ["certifications", "courses", "licenses", "certifications & training"],
+    "achievements": ["achievements", "awards", "accomplishments", "honors"],
+    "internships": ["internship", "internships", "training"],
 }
 
+
 def find_best_section(header_text):
-    """
-    Fuzzy match detected header to the canonical section name.
-    """
+    header_text_lower = header_text.lower().strip()
     best_match = None
     best_score = 0
 
     for canonical, variations in SECTION_HEADERS.items():
         for v in variations:
-            score = fuzz.ratio(header_text.lower(), v.lower())
+            score = fuzz.ratio(header_text_lower, v)
             if score > best_score:
-                best_match = canonical
                 best_score = score
+                best_match = canonical
 
     return best_match if best_score >= 65 else None
 
 
 def parse_resume_sections(text):
-    """
-    Bulletproof Resume Section Extractor.
-    Works for variations like:
-    - SKILLS:
-    - Skills
-    - SKILLS
-    - Professional Experience
-    - EXPERIENCE
-    - Education :
-    """
-    sections = {
-        "summary": "",
-        "skills": "",
-        "experience": "",
-        "projects": "",
-        "education": "",
-        "certifications": "",
-        "achievements": ""
-    }
+    """Production-level section detection with fuzzy headers."""
+    sections = {key: "" for key in SECTION_HEADERS.keys()}
 
     clean = text.replace("\r", "\n")
 
-    # Matches lines like:
-    # "SKILLS", "Skills:", "Technical Skills", "Experience\n"
-    pattern = r"\n\s*([A-Za-z ]{3,40})\s*\:\s*|\n\s*([A-Za-z ]{3,40})\s*\n"
+    # Matches: "SKILLS", "Skills:", "Skills \n"
+    pattern = r"\n\s*([A-Za-z][A-Za-z ]{2,40})\s*:?\s*\n"
+
     matches = list(re.finditer(pattern, clean))
 
     if not matches:
-        return sections  # fallback
+        return sections
 
     for i, match in enumerate(matches):
-        header = match.group(1) or match.group(2)
+        header = match.group(1).strip()
         start = match.end()
-
-        end = matches[i+1].start() if i + 1 < len(matches) else len(clean)
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(clean)
         body = clean[start:end].strip()
 
         best_section = find_best_section(header)
-
         if best_section:
             sections[best_section] += "\n" + body
 
     return sections
+
 
 def extract_text_from_pdf(file) -> str:
     """
