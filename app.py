@@ -79,7 +79,7 @@ with col2:
         placeholder="Paste job description or key skills..."
     )
 
-# ⚙️ Parse resume (REPLACE THIS SECTION IN YOUR app.py)
+# ⚙️ Parse resume
 resume_text = ""
 if resume_file:
     try:
