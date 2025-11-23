@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import parse_resume_sections
 import re
-import os  # ✅ ADD THIS IMPORT
+import os  
 
 _model = None
 
