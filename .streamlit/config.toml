@@ -1,14 +1,125 @@
+# ============================================
+# ResumeBoost AI - Streamlit Configuration
+# ============================================
+
+# -------- Server Configuration ----------
 [server]
+# Disable CORS for easier deployment
 enableCORS = false
+
+# Disable XSRF protection (only if behind reverse proxy)
 enableXsrfProtection = false
 
+# Max file upload size (in MB) - increased for large resumes
+maxUploadSize = 10
+
+# Port configuration (optional - uncomment for custom port)
+# port = 8501
+
+# Enable WebSocket compression for faster loading
+enableWebsocketCompression = true
+
+# File watcher type (auto, poll, or none)
+fileWatcherType = "auto"
+
+# Run on save (for development)
+runOnSave = false
+
+# -------- Browser Configuration ----------
+[browser]
+# Automatically open browser on start
+gatherUsageStats = false
+
+# Server address
+serverAddress = "localhost"
+
+# Server port
+serverPort = 8501
+
+# -------- Theme Configuration ----------
 [theme]
+# Primary color (blue for CTAs and buttons)
 primaryColor = "#2563eb"
+
+# Background color (white for clean look)
 backgroundColor = "#ffffff"
+
+# Secondary background (light gray for cards)
 secondaryBackgroundColor = "#f8fafc"
+
+# Text color (dark slate for readability)
 textColor = "#1e293b"
+
+# Font family
 font = "sans serif"
 
-# ✅ CORRECT WAY to hide sidebar nav (new syntax)
+# Base theme (light or dark)
+base = "light"
+
+# -------- Client Configuration ----------
 [client]
+# Hide sidebar navigation (keeps UI clean)
 showSidebarNavigation = false
+
+# Toolbar mode: auto, developer, viewer, minimal
+toolbarMode = "minimal"
+
+# Show error details
+showErrorDetails = true
+
+# -------- Runner Configuration ----------
+[runner]
+# Faster app updates during development
+fastReruns = true
+
+# Magic enabled (allows writing variables without st.write)
+magicEnabled = false
+
+# Post script GC (garbage collection) for better memory management
+postScriptGC = true
+
+# -------- Logger Configuration ----------
+[logger]
+# Log level: error, warning, info, debug
+level = "info"
+
+# Message format
+messageFormat = "%(asctime)s %(message)s"
+
+# -------- Performance Optimization ----------
+# Uncomment these for production deployment
+
+# [server]
+# enableStaticServing = true
+# maxCachedMessageAge = 0
+
+# [global]
+# developmentMode = false
+# unitTest = false
+
+# -------- Security (Production) ----------
+# Uncomment for production with proper security
+
+# [server]
+# enableXsrfProtection = true
+# cookieSecret = "your-secret-key-here-change-this"
+
+# -------- Session Configuration ----------
+# Uncomment to customize session behavior
+
+# [server.sessionStorage]
+# maxSessions = 100
+# sessionIdReuse = false
+
+# -------- Deprecation Warnings ----------
+[deprecation]
+# Show deprecation warnings
+showfileUploaderEncoding = false
+showImageFormat = false
+showPyplotGlobalUse = false
+
+# -------- Magic Configuration ----------
+[magic]
+# Display matplotlib plots automatically
+displayRootDoc = false
+displayLastExpr = false
