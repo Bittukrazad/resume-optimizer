@@ -54,6 +54,7 @@ requests==2.31.0
 python-dotenv==1.0.1
 python-dateutil==2.8.2
 pytz==2023.3
+rapidfuzz==3.6.1   # <-- REQUIRED for perfect section parsing
 
 # -------- Optional: Performance ----------
 # Uncomment if needed
