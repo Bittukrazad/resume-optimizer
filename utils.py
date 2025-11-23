@@ -178,25 +178,29 @@ def extract_text_from_docx(file) -> str:
 def clean_text(text: str) -> str:
     """
     Clean extracted text while preserving important structure
+    LESS AGGRESSIVE - keeps more original content
     """
     if not text:
         return ""
     
-    # Remove URLs and emails (but keep the context)
-    text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', ' ', text)
-    text = re.sub(r'\S+@\S+\.\S+', ' [email] ', text)
+    # Keep original case for better matching
+    original_text = text
     
-    # Remove excessive punctuation and special characters (but keep basic ones)
-    text = re.sub(r'[^\w\s\.\,\-\(\)\[\]\+\#\:\;\/\&\%]', ' ', text)
+    # Remove URLs but keep the context
+    text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', ' [URL] ', text)
     
-    # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'\n\s*\n', '\n', text)
+    # Replace email with placeholder to preserve structure
+    text = re.sub(r'\S+@\S+\.\S+', ' [EMAIL] ', text)
     
-    # Remove very short lines (likely artifacts)
-    lines = text.split('\n')
-    lines = [line.strip() for line in lines if len(line.strip()) > 2]
-    text = '\n'.join(lines)
+    # Keep most special characters - only remove truly problematic ones
+    # DON'T convert to lowercase here - preserve original case
+    text = re.sub(r'[^\w\s\.\,\-\(\)\[\]\+\#\:\;\/\&\%\@\*\'\"]', ' ', text)
+    
+    # Normalize whitespace but keep line breaks
+    text = re.sub(r' +', ' ', text)  # Multiple spaces to single
+    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)  # Multiple newlines to double
+    
+    # DON'T remove short lines - they might be headers
     
     return text.strip()
 
