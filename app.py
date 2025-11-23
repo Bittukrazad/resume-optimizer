@@ -93,26 +93,44 @@ if resume_file:
                 st.error("❌ Unsupported file type. Please upload PDF or DOCX.")
                 st.stop()
         
-        # Validate extracted content
+        # Debug: Show raw extraction first
+        if resume_text and len(resume_text.strip()) > 10:
+            word_count = len(resume_text.split())
+            st.success(f"✅ Text extracted! ({word_count} words, {len(resume_text)} characters)")
+            
+            # Always show preview for transparency
+            with st.expander("👁️ Preview Extracted Text (First 1000 chars)"):
+                st.text_area("Extracted content:", resume_text[:1000], height=200, disabled=True)
+                st.caption(f"Total length: {len(resume_text)} characters")
+        else:
+            st.error("⚠️ No text could be extracted from the file!")
+            st.info("**Possible reasons:**\n"
+                   "• File is a scanned image (not text-based PDF)\n"
+                   "• File is corrupted or password-protected\n"
+                   "• File format is not supported\n\n"
+                   "**Try this:** Use an online converter to convert to text-based PDF")
+            st.stop()
+        
+        # Validate extracted content (optional - can be disabled)
         from utils import validate_resume_content
         is_valid, error_msg = validate_resume_content(resume_text)
         
         if not is_valid:
-            st.error(f"⚠️ {error_msg}")
-            st.info("💡 **Tips:**\n"
-                   "• Make sure the file is a proper resume\n"
-                   "• Try converting to a different format (PDF ↔ DOCX)\n"
-                   "• Ensure the file is not password-protected\n"
-                   "• Check if text is selectable (not an image)")
-            st.stop()
-        
-        # Success message
-        word_count = len(resume_text.split())
-        st.success(f"✅ Resume loaded successfully! ({word_count} words extracted)")
-        
-        # Show preview
-        with st.expander("👁️ Preview Extracted Text"):
-            st.text_area("First 500 characters:", resume_text[:500], height=150, disabled=True)
+            st.warning(f"⚠️ Validation Warning: {error_msg}")
+            
+            # Show what was found
+            st.info("**Debug Info:**\n"
+                   f"• Text length: {len(resume_text)} characters\n"
+                   f"• Word count: {len(resume_text.split())} words\n"
+                   f"• First 200 chars: `{resume_text[:200]}`")
+            
+            # Give option to continue anyway
+            if st.button("⚡ Continue Anyway (Skip Validation)", type="secondary"):
+                st.session_state.skip_validation = True
+                st.rerun()
+            
+            if not st.session_state.get('skip_validation', False):
+                st.stop()
             
     except ValueError as ve:
         # Specific error from extraction functions
