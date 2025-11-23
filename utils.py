@@ -259,21 +259,57 @@ def validate_resume_content(text: str) -> tuple[bool, str]:
     Validate if extracted text is actually a resume
     Returns (is_valid, error_message)
     """
-    if not text or len(text.strip()) < 100:
-        return False, "Extracted text is too short (less than 100 characters). File may be empty or corrupted."
+    if not text or len(text.strip()) < 50:
+        return False, "Extracted text is too short (less than 50 characters). File may be empty or corrupted."
     
-    # Check for common resume keywords
+    # Check for common resume keywords (much more comprehensive)
     resume_indicators = [
-        'experience', 'education', 'skills', 'project',
-        'bachelor', 'master', 'degree', 'university',
-        'work', 'intern', 'job', 'role', 'position'
+        # Section headers
+        'experience', 'education', 'skills', 'project', 'summary', 
+        'objective', 'profile', 'qualification', 'certification',
+        'achievement', 'internship', 'training', 'award',
+        
+        # Educational terms
+        'bachelor', 'master', 'degree', 'university', 'college',
+        'school', 'graduate', 'undergraduate', 'btech', 'mtech',
+        'bsc', 'msc', 'diploma', 'cgpa', 'gpa', 'percentage',
+        
+        # Work terms
+        'work', 'intern', 'job', 'role', 'position', 'responsibilities',
+        'company', 'organization', 'team', 'developed', 'managed',
+        'led', 'designed', 'implemented', 'built', 'created',
+        
+        # Technical terms
+        'python', 'java', 'javascript', 'react', 'node', 'sql',
+        'html', 'css', 'programming', 'software', 'developer',
+        'engineer', 'data', 'analysis', 'machine learning', 'ai',
+        
+        # Time/date indicators
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december',
+        '2020', '2021', '2022', '2023', '2024', '2025',
+        'present', 'current', 'ongoing',
+        
+        # Contact info indicators
+        'email', 'phone', 'linkedin', 'github', 'portfolio',
+        
+        # Common resume words
+        'professional', 'technical', 'leadership', 'communication',
+        'problem solving', 'teamwork', 'analytical'
     ]
     
     text_lower = text.lower()
     found_indicators = sum(1 for indicator in resume_indicators if indicator in text_lower)
     
-    if found_indicators < 2:
+    # Very lenient check - just need ANY indicator
+    if found_indicators < 1:
         return False, "File doesn't appear to be a resume. Please upload a valid resume with sections like Education, Experience, Skills, or Projects."
     
+    # Check if it's mostly gibberish (too many numbers or special chars)
+    alpha_chars = sum(c.isalpha() for c in text)
+    total_chars = len(text.replace(' ', ''))
+    
+    if total_chars > 0 and alpha_chars / total_chars < 0.3:
+        return False, "Extracted text appears corrupted. Try converting the file to a different format."
+    
     return True, ""
- 
