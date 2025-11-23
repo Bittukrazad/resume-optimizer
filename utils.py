@@ -12,56 +12,75 @@ logger = logging.getLogger(__name__)
 
 SECTION_HEADERS = {
     "summary": ["summary", "professional summary", "career summary", "objective"],
-    "skills": ["skills", "technical skills", "skills & tools", "core competencies", "tech stack"],
+    "skills": ["skills", "technical skills", "skills & tools", "core competencies"],
     "experience": ["experience", "work experience", "professional experience", "employment history"],
-    "projects": ["projects", "academic projects", "personal projects", "technical projects"],
+    "projects": ["projects", "academic projects", "personal projects"],
     "education": ["education", "academic background", "qualifications"],
-    "certifications": ["certifications", "courses", "licenses", "certifications & training"],
-    "achievements": ["achievements", "awards", "accomplishments", "honors"],
-    "internships": ["internship", "internships", "training"],
+    "certifications": ["certifications", "courses", "licenses", "training"],
+    "achievements": ["achievements", "awards", "accomplishments"],
 }
 
-
 def find_best_section(header_text):
-    header_text_lower = header_text.lower().strip()
     best_match = None
     best_score = 0
 
     for canonical, variations in SECTION_HEADERS.items():
         for v in variations:
-            score = fuzz.ratio(header_text_lower, v)
+            score = fuzz.ratio(header_text.lower(), v.lower())
             if score > best_score:
-                best_score = score
                 best_match = canonical
+                best_score = score
 
-    return best_match if best_score >= 65 else None
+    return best_match if best_score >= 60 else None
+
+
+def clean_text(t):
+    return re.sub(r"\s+", " ", t).strip()
 
 
 def parse_resume_sections(text):
-    """Production-level section detection with fuzzy headers."""
-    sections = {key: "" for key in SECTION_HEADERS.keys()}
+    """
+    Universal parser that works for:
+    - Two-column resumes
+    - Mixed-case section headers
+    - Headers with or without ':'
+    - Headers on left/right columns
+    - Overleaf & Canva templates
+    """
 
-    clean = text.replace("\r", "\n")
+    # Normalize text
+    text = text.replace("\r", "\n")
 
-    # Matches: "SKILLS", "Skills:", "Skills \n"
-    pattern = r"\n\s*([A-Za-z][A-Za-z ]{2,40})\s*:?\s*\n"
+    # Convert ALL CAPS headings (common in PDFs) to Title Case
+    text = re.sub(r"\n([A-Z][A-Z ]{3,})\n", lambda m: "\n" + m.group(1).title() + "\n", text)
 
-    matches = list(re.finditer(pattern, clean))
+    # Strong heading pattern: detects standalone words that look like section names
+    heading_pattern = r"\n\s*([A-Za-z][A-Za-z ]{2,35})\s*\n|\n\s*([A-Za-z][A-Za-z ]{2,35})\s*\:"
+
+    matches = list(re.finditer(heading_pattern, text))
+
+    sections = {k: "" for k in SECTION_HEADERS.keys()}
 
     if not matches:
         return sections
 
     for i, match in enumerate(matches):
-        header = match.group(1).strip()
-        start = match.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(clean)
-        body = clean[start:end].strip()
+        header_raw = (match.group(1) or match.group(2) or "").strip()
 
-        best_section = find_best_section(header)
-        if best_section:
-            sections[best_section] += "\n" + body
+        if not header_raw:
+            continue
+
+        start = match.end()
+        end = matches[i+1].start() if i+1 < len(matches) else len(text)
+
+        body = text[start:end].strip()
+        best = find_best_section(header_raw)
+
+        if best:
+            sections[best] += "\n" + clean_text(body)
 
     return sections
+
 
 
 def extract_text_from_pdf(file) -> str:
