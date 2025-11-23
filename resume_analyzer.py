@@ -1,4 +1,4 @@
-import os
+import os as os_module
 import re
 import numpy as np
 import torch
@@ -11,7 +11,7 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        os.makedirs("./model_cache", exist_ok=True)
+        os_module.makedirs("./model_cache", exist_ok=True)
         device = "cpu"
         _model = SentenceTransformer(
             'all-MiniLM-L6-v2',
@@ -46,7 +46,7 @@ def analyze_resume(resume_text, job_desc):
         'html', 'css', 'javascript', 'react', 'nodejs', 'flask', 'django', 'rest', 'api',
         'machine learning', 'deep learning', 'ai', 'nlp', 'cv', 'tensorflow', 'pytorch', 'scikit-learn',
         'pandas', 'numpy', 'matplotlib', 'seaborn', 'bert', 'transformers',
-        'dsa', 'algorithms', 'data structures', 'system design', 'oops', 'dbms', 'os', 'networking'
+        'dsa', 'algorithms', 'data structures', 'system design', 'oops', 'dbms', 'operating system', 'networking'
     }
     
     resume_words = set(resume_text.lower().split())
@@ -136,3 +136,4 @@ def analyze_resume(resume_text, job_desc):
         "weak_bullet": weak_bullets[0]["original"] if weak_bullets else "Built a project.",
         "rewrite_suggestion": rewrite
     }
+   
