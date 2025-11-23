@@ -1,10 +1,86 @@
 import re
 import io
 import logging
+from rapidfuzz import fuzz, process
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+# ============================================================
+# SECTION PARSER (Advanced Fuzzy Header Detection)
+# ============================================================
+
+SECTION_HEADERS = {
+    "summary": ["summary", "professional summary", "career summary", "objective"],
+    "skills": ["skills", "technical skills", "skills & tools", "core competencies"],
+    "experience": ["experience", "work experience", "professional experience", "employment history"],
+    "projects": ["projects", "academic projects", "personal projects"],
+    "education": ["education", "academic background", "qualifications"],
+    "certifications": ["certifications", "courses", "licenses"],
+    "achievements": ["achievements", "awards", "accomplishments"],
+}
+
+def find_best_section(header_text):
+    """
+    Fuzzy match detected header to the canonical section name.
+    """
+    best_match = None
+    best_score = 0
+
+    for canonical, variations in SECTION_HEADERS.items():
+        for v in variations:
+            score = fuzz.ratio(header_text.lower(), v.lower())
+            if score > best_score:
+                best_match = canonical
+                best_score = score
+
+    return best_match if best_score >= 65 else None
+
+
+def parse_resume_sections(text):
+    """
+    Bulletproof Resume Section Extractor.
+    Works for variations like:
+    - SKILLS:
+    - Skills
+    - SKILLS
+    - Professional Experience
+    - EXPERIENCE
+    - Education :
+    """
+    sections = {
+        "summary": "",
+        "skills": "",
+        "experience": "",
+        "projects": "",
+        "education": "",
+        "certifications": "",
+        "achievements": ""
+    }
+
+    clean = text.replace("\r", "\n")
+
+    # Matches lines like:
+    # "SKILLS", "Skills:", "Technical Skills", "Experience\n"
+    pattern = r"\n\s*([A-Za-z ]{3,40})\s*\:\s*|\n\s*([A-Za-z ]{3,40})\s*\n"
+    matches = list(re.finditer(pattern, clean))
+
+    if not matches:
+        return sections  # fallback
+
+    for i, match in enumerate(matches):
+        header = match.group(1) or match.group(2)
+        start = match.end()
+
+        end = matches[i+1].start() if i + 1 < len(matches) else len(clean)
+        body = clean[start:end].strip()
+
+        best_section = find_best_section(header)
+
+        if best_section:
+            sections[best_section] += "\n" + body
+
+    return sections
 
 def extract_text_from_pdf(file) -> str:
     """
@@ -203,102 +279,6 @@ def clean_text(text: str) -> str:
     # DON'T remove short lines - they might be headers
     
     return text.strip()
-
-
-def parse_resume_sections(text: str):
-    """
-    Split resume into sections: Skills, Projects, Experience, Education
-    Handles multiple header formats including ALL CAPS, Title Case, etc.
-    Returns dict: {section_name: text}
-    """
-    sections = {
-        "skills": "",
-        "projects": "",
-        "experience": "",
-        "education": ""
-    }
-    
-    # More comprehensive section patterns - matches various formats
-    patterns = {
-        "skills": r"(?i)^[\s]*(?:technical[\s]+)?skills?(?:[\s]+and[\s]+(?:competencies|expertise))?[\s]*$|^[\s]*core[\s]+competencies[\s]*$|^[\s]*expertise[\s]*$|^[\s]*proficiencies[\s]*$|^[\s]*technologies[\s]*$",
-        
-        "projects": r"(?i)^[\s]*projects?(?:[\s]+(?:and[\s]+)?(?:achievements?|portfolio))?[\s]*$|^[\s]*(?:personal|academic|key)[\s]+projects?[\s]*$|^[\s]*portfolio[\s]*$",
-        
-        "experience": r"(?i)^[\s]*(?:work[\s]+)?experience[\s]*$|^[\s]*professional[\s]+experience[\s]*$|^[\s]*(?:work[\s]+)?history[\s]*$|^[\s]*employment(?:[\s]+history)?[\s]*$|^[\s]*internships?[\s]*$|^[\s]*career[\s]+(?:summary|history)[\s]*$",
-        
-        "education": r"(?i)^[\s]*education(?:al[\s]+(?:background|qualifications?))?[\s]*$|^[\s]*academic[\s]+(?:background|details|qualifications?)[\s]*$|^[\s]*qualifications?[\s]*$"
-    }
-    
-    lines = text.split('\n')
-    current_section = None
-    section_content = []
-    
-    for i, line in enumerate(lines):
-        line_stripped = line.strip()
-        if not line_stripped:
-            continue
-        
-        # Check if line is a section header
-        matched = False
-        
-        # IMPORTANT: Check if it's a SHORT line (likely a header)
-        # Most section headers are under 40 characters
-        if len(line_stripped) < 40:
-            for sec, pattern in patterns.items():
-                if re.match(pattern, line_stripped):
-                    # Save previous section
-                    if current_section and section_content:
-                        sections[current_section] = '\n'.join(section_content)
-                    
-                    current_section = sec
-                    section_content = []
-                    matched = True
-                    break
-        
-        # Add content to current section (skip the header line itself)
-        if not matched and current_section:
-            section_content.append(line_stripped)
-    
-    # Save last section
-    if current_section and section_content:
-        sections[current_section] = '\n'.join(section_content)
-    
-    # Fallback: If no sections detected, try simpler keyword search
-    if all(not content.strip() for content in sections.values()):
-        text_lower = text.lower()
-        
-        # Split by common section indicators
-        if 'skills' in text_lower:
-            skills_start = text_lower.find('skills')
-            skills_end = min([text_lower.find(keyword, skills_start + 6) 
-                            for keyword in ['experience', 'education', 'projects', 'work', 'employment'] 
-                            if text_lower.find(keyword, skills_start + 6) > skills_start] or [len(text)])
-            sections['skills'] = text[skills_start:skills_end]
-        
-        if 'experience' in text_lower or 'work' in text_lower:
-            exp_start = min([pos for pos in [text_lower.find('experience'), text_lower.find('work experience'), text_lower.find('employment')] if pos >= 0] or [0])
-            if exp_start > 0:
-                exp_end = min([text_lower.find(keyword, exp_start + 10) 
-                             for keyword in ['education', 'skills', 'projects'] 
-                             if text_lower.find(keyword, exp_start + 10) > exp_start] or [len(text)])
-                sections['experience'] = text[exp_start:exp_end]
-        
-        if 'education' in text_lower:
-            edu_start = text_lower.find('education')
-            edu_end = min([text_lower.find(keyword, edu_start + 9) 
-                         for keyword in ['skills', 'experience', 'projects', 'certifications'] 
-                         if text_lower.find(keyword, edu_start + 9) > edu_start] or [len(text)])
-            sections['education'] = text[edu_start:edu_end]
-        
-        if 'project' in text_lower:
-            proj_start = text_lower.find('project')
-            proj_end = min([text_lower.find(keyword, proj_start + 7) 
-                          for keyword in ['experience', 'education', 'skills'] 
-                          if text_lower.find(keyword, proj_start + 7) > proj_start] or [len(text)])
-            sections['projects'] = text[proj_start:proj_end]
-    
-    return sections
-
 
 def validate_resume_content(text: str) -> tuple[bool, str]:
     """
