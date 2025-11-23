@@ -414,7 +414,69 @@ if st.sidebar.checkbox("🔐 Admin"):
             for key in ["reports_generated", "paid_users", "payment_confirmed", "last_result", "awaiting_payment"]:
                 st.session_state.pop(key, None)
             st.sidebar.success("✅ Stats reset!")
-
+            
+# SIDEBAR for debugging
+st.sidebar.markdown("---")
+if st.sidebar.checkbox("🔧 Debug Mode"):
+    st.sidebar.markdown("### 🔍 Diagnostic Info")
+    
+    if resume_file and resume_text:
+        st.sidebar.success("✅ File uploaded & processed")
+        
+        # File info
+        st.sidebar.metric("File Size", f"{resume_file.size / 1024:.1f} KB")
+        st.sidebar.metric("File Type", resume_file.name.split('.')[-1].upper())
+        
+        # Extraction info
+        st.sidebar.metric("Characters Extracted", len(resume_text))
+        st.sidebar.metric("Word Count", len(resume_text.split()))
+        st.sidebar.metric("Line Count", len(resume_text.split('\n')))
+        
+        # Show sections detected
+        from utils import parse_resume_sections
+        sections = parse_resume_sections(resume_text)
+        
+        st.sidebar.markdown("**📂 Sections Detected:**")
+        for sec, content in sections.items():
+            if content.strip():
+                word_count = len(content.split())
+                st.sidebar.text(f"• {sec.title()}: {word_count} words")
+            else:
+                st.sidebar.text(f"• {sec.title()}: ❌ Not found")
+        
+        # Quick keyword check
+        tech_found = []
+        for keyword in ['python', 'java', 'javascript', 'react', 'sql', 'machine learning', 'ai']:
+            if keyword in resume_text.lower():
+                tech_found.append(keyword)
+        
+        if tech_found:
+            st.sidebar.markdown(f"**🔑 Tech Keywords Found:** {', '.join(tech_found[:5])}")
+        else:
+            st.sidebar.warning("⚠️ No common tech keywords found")
+            
+    elif resume_file:
+        st.sidebar.warning("⚠️ File uploaded but no text extracted")
+        st.sidebar.info(f"File: {resume_file.name}\nSize: {resume_file.size} bytes")
+    else:
+        st.sidebar.info("📁 No file uploaded yet")
+    
+    # Test button
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🧪 Test Extraction", help="Re-extract text from uploaded file"):
+        if resume_file:
+            try:
+                file.seek(0)
+                if resume_file.name.endswith(".pdf"):
+                    test_text = extract_text_from_pdf(resume_file)
+                else:
+                    test_text = extract_text_from_docx(resume_file)
+                
+                st.sidebar.success(f"✅ Extracted {len(test_text)} chars")
+                st.sidebar.text_area("Raw text:", test_text[:500], height=150)
+            except Exception as e:
+                st.sidebar.error(f"❌ {str(e)}")
+                
 # ================== LEGAL PAGES ==================
 
 st.sidebar.markdown("### 📘 Legal & Support")
