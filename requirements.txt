@@ -1,9 +1,9 @@
 # ============================================
-# ResumeBoost AI - Requirements File
+# ResumeBoost AI - Enhanced Requirements
 # Python 3.9+ recommended
 # ============================================
 
-# -------- Core ML & Transformers ----------
+# -------- Core ML & NLP ----------
 huggingface_hub==0.23.0
 sentence-transformers==2.2.2
 transformers==4.36.0
@@ -19,7 +19,7 @@ mdurl==0.1.2
 watchdog==3.0.0
 
 # -------- PDF Processing (Multiple Methods) ----------
-# Primary methods
+# Primary extraction methods
 pypdf2==3.0.1
 pypdf==4.0.1
 pdfplumber==0.10.3
@@ -28,7 +28,7 @@ pdfplumber==0.10.3
 pdfminer.six==20221105
 pycryptodome==3.19.0
 
-# Supporting libraries for PDF
+# Supporting libraries
 pillow==10.1.0
 cryptography==41.0.7
 
@@ -46,6 +46,9 @@ numpy==1.24.4
 pandas==2.0.3
 scipy==1.11.4
 
+# -------- Fuzzy Matching (CRITICAL) ----------
+rapidfuzz==3.8.1
+
 # -------- Payment Gateway ----------
 razorpay==1.4.1
 requests==2.31.0
@@ -54,20 +57,15 @@ requests==2.31.0
 python-dotenv==1.0.1
 python-dateutil==2.8.2
 pytz==2023.3
-rapidfuzz==3.8.1   # <-- REQUIRED for perfect section parsing
-
-# -------- Optional: Performance ----------
-# Uncomment if needed
-# joblib==1.3.2
-# threadpoolctl==3.2.0
 
 # -------- Optional: Advanced Features ----------
 # Uncomment if adding OCR support for scanned PDFs
 # pytesseract==0.3.10
 # pdf2image==1.16.3
 
-# -------- Development & Debugging (Optional) ----------
+# -------- Development & Testing (Optional) ----------
 # Uncomment for development
 # pytest==7.4.3
 # black==23.12.1
 # flake8==6.1.0
+# mypy==1.7.1
