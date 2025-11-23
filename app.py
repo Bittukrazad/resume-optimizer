@@ -34,9 +34,7 @@ except:
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
     RAZORPAY_KEY = os.getenv("RAZORPAY_KEY_ID", "rzp_test_00000000000000")
     RAZORPAY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
-    
-    if not ADMIN_PASSWORD:
-        st.error("⚠️ Admin password not configured!")
+
 
 # Payment tracking to prevent reuse
 if "used_payment_ids" not in st.session_state:
