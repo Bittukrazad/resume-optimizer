@@ -79,18 +79,61 @@ with col2:
         placeholder="Paste job description or key skills..."
     )
 
-# ⚙️ Parse resume
+# ⚙️ Parse resume (REPLACE THIS SECTION IN YOUR app.py)
 resume_text = ""
 if resume_file:
     try:
-        if resume_file.name.endswith(".pdf"):
-            resume_text = extract_text_from_pdf(resume_file)
-        elif resume_file.name.endswith(".docx"):
-            resume_text = extract_text_from_docx(resume_file)
-        if not resume_text.strip():
-            st.error("⚠️ Could not extract text. Try a standard resume.")
+        # Show processing message
+        with st.spinner(f"📄 Processing {resume_file.name}..."):
+            if resume_file.name.endswith(".pdf"):
+                resume_text = extract_text_from_pdf(resume_file)
+            elif resume_file.name.endswith(".docx"):
+                resume_text = extract_text_from_docx(resume_file)
+            else:
+                st.error("❌ Unsupported file type. Please upload PDF or DOCX.")
+                st.stop()
+        
+        # Validate extracted content
+        from utils import validate_resume_content
+        is_valid, error_msg = validate_resume_content(resume_text)
+        
+        if not is_valid:
+            st.error(f"⚠️ {error_msg}")
+            st.info("💡 **Tips:**\n"
+                   "• Make sure the file is a proper resume\n"
+                   "• Try converting to a different format (PDF ↔ DOCX)\n"
+                   "• Ensure the file is not password-protected\n"
+                   "• Check if text is selectable (not an image)")
+            st.stop()
+        
+        # Success message
+        word_count = len(resume_text.split())
+        st.success(f"✅ Resume loaded successfully! ({word_count} words extracted)")
+        
+        # Show preview
+        with st.expander("👁️ Preview Extracted Text"):
+            st.text_area("First 500 characters:", resume_text[:500], height=150, disabled=True)
+            
+    except ValueError as ve:
+        # Specific error from extraction functions
+        st.error(f"⚠️ {str(ve)}")
+        st.info("💡 **Troubleshooting:**\n"
+               "• Try saving your resume as a new file\n"
+               "• Use 'Save As PDF' from Word/Google Docs\n"
+               "• Ensure text is selectable (not scanned image)\n"
+               "• Try the other format (PDF → DOCX or vice versa)")
     except Exception as e:
-        st.error(f"❌ Error parsing file: {e}")
+        # Unexpected errors
+        st.error(f"❌ Unexpected error: {str(e)}")
+        st.warning("🔧 **Please try:**\n"
+                  "1. Re-uploading the file\n"
+                  "2. Converting to the other format\n"
+                  "3. Creating a new resume from a template\n"
+                  "4. Contact support if issue persists")
+        
+        # Log for debugging
+        import logging
+        logging.error(f"Resume parsing error: {e}", exc_info=True)
 
 # ✅ Analyze Button
 if st.button("🔍 Analyze Resume (Free Preview)", type="primary", use_container_width=True) and resume_text and job_desc:
