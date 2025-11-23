@@ -208,6 +208,7 @@ def clean_text(text: str) -> str:
 def parse_resume_sections(text: str):
     """
     Split resume into sections: Skills, Projects, Experience, Education
+    Handles multiple header formats including ALL CAPS, Title Case, etc.
     Returns dict: {section_name: text}
     """
     sections = {
@@ -217,43 +218,84 @@ def parse_resume_sections(text: str):
         "education": ""
     }
     
-    # More comprehensive section patterns
+    # More comprehensive section patterns - matches various formats
     patterns = {
-        "skills": r"(?i)\b(technical\s+skills?|skills?|core\s+competencies|expertise|proficiencies|technologies)\b",
-        "projects": r"(?i)\b(projects?|personal\s+projects?|academic\s+projects?|key\s+projects?)\b",
-        "experience": r"(?i)\b(experience|work\s+experience|professional\s+experience|employment|internships?|work\s+history)\b",
-        "education": r"(?i)\b(education|academic\s+background|qualifications|academic\s+details)\b"
+        "skills": r"(?i)^[\s]*(?:technical[\s]+)?skills?(?:[\s]+and[\s]+(?:competencies|expertise))?[\s]*$|^[\s]*core[\s]+competencies[\s]*$|^[\s]*expertise[\s]*$|^[\s]*proficiencies[\s]*$|^[\s]*technologies[\s]*$",
+        
+        "projects": r"(?i)^[\s]*projects?(?:[\s]+(?:and[\s]+)?(?:achievements?|portfolio))?[\s]*$|^[\s]*(?:personal|academic|key)[\s]+projects?[\s]*$|^[\s]*portfolio[\s]*$",
+        
+        "experience": r"(?i)^[\s]*(?:work[\s]+)?experience[\s]*$|^[\s]*professional[\s]+experience[\s]*$|^[\s]*(?:work[\s]+)?history[\s]*$|^[\s]*employment(?:[\s]+history)?[\s]*$|^[\s]*internships?[\s]*$|^[\s]*career[\s]+(?:summary|history)[\s]*$",
+        
+        "education": r"(?i)^[\s]*education(?:al[\s]+(?:background|qualifications?))?[\s]*$|^[\s]*academic[\s]+(?:background|details|qualifications?)[\s]*$|^[\s]*qualifications?[\s]*$"
     }
     
     lines = text.split('\n')
     current_section = None
     section_content = []
     
-    for line in lines:
+    for i, line in enumerate(lines):
         line_stripped = line.strip()
         if not line_stripped:
             continue
         
         # Check if line is a section header
         matched = False
-        for sec, pattern in patterns.items():
-            if re.search(pattern, line_stripped) and len(line_stripped) < 50:
-                # Save previous section
-                if current_section and section_content:
-                    sections[current_section] = ' '.join(section_content)
-                
-                current_section = sec
-                section_content = []
-                matched = True
-                break
         
-        # Add content to current section
+        # IMPORTANT: Check if it's a SHORT line (likely a header)
+        # Most section headers are under 40 characters
+        if len(line_stripped) < 40:
+            for sec, pattern in patterns.items():
+                if re.match(pattern, line_stripped):
+                    # Save previous section
+                    if current_section and section_content:
+                        sections[current_section] = '\n'.join(section_content)
+                    
+                    current_section = sec
+                    section_content = []
+                    matched = True
+                    break
+        
+        # Add content to current section (skip the header line itself)
         if not matched and current_section:
             section_content.append(line_stripped)
     
     # Save last section
     if current_section and section_content:
-        sections[current_section] = ' '.join(section_content)
+        sections[current_section] = '\n'.join(section_content)
+    
+    # Fallback: If no sections detected, try simpler keyword search
+    if all(not content.strip() for content in sections.values()):
+        text_lower = text.lower()
+        
+        # Split by common section indicators
+        if 'skills' in text_lower:
+            skills_start = text_lower.find('skills')
+            skills_end = min([text_lower.find(keyword, skills_start + 6) 
+                            for keyword in ['experience', 'education', 'projects', 'work', 'employment'] 
+                            if text_lower.find(keyword, skills_start + 6) > skills_start] or [len(text)])
+            sections['skills'] = text[skills_start:skills_end]
+        
+        if 'experience' in text_lower or 'work' in text_lower:
+            exp_start = min([pos for pos in [text_lower.find('experience'), text_lower.find('work experience'), text_lower.find('employment')] if pos >= 0] or [0])
+            if exp_start > 0:
+                exp_end = min([text_lower.find(keyword, exp_start + 10) 
+                             for keyword in ['education', 'skills', 'projects'] 
+                             if text_lower.find(keyword, exp_start + 10) > exp_start] or [len(text)])
+                sections['experience'] = text[exp_start:exp_end]
+        
+        if 'education' in text_lower:
+            edu_start = text_lower.find('education')
+            edu_end = min([text_lower.find(keyword, edu_start + 9) 
+                         for keyword in ['skills', 'experience', 'projects', 'certifications'] 
+                         if text_lower.find(keyword, edu_start + 9) > edu_start] or [len(text)])
+            sections['education'] = text[edu_start:edu_end]
+        
+        if 'project' in text_lower:
+            proj_start = text_lower.find('project')
+            proj_end = min([text_lower.find(keyword, proj_start + 7) 
+                          for keyword in ['experience', 'education', 'skills'] 
+                          if text_lower.find(keyword, proj_start + 7) > proj_start] or [len(text)])
+            sections['projects'] = text[proj_start:proj_end]
     
     return sections
 
