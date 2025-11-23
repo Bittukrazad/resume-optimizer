@@ -10,9 +10,13 @@ rich==13.7.1
 markdown-it-py==2.2.0
 mdurl==0.1.2
 
-# -------- PDF / Documents ----------
+# -------- PDF / Documents (ENHANCED) ----------
 python-docx==1.1.2
 pypdf2==3.0.1
+pypdf==4.0.1
+pdfplumber==0.10.3
+pdfminer.six==20221105
+docx2txt==0.8
 fpdf2==2.7.9
 
 # -------- ML / Data ----------
@@ -23,5 +27,3 @@ pandas==2.0.3
 # -------- Payments / Misc ----------
 razorpay==1.4.1
 python-dotenv==1.0.1
-
-
