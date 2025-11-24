@@ -378,6 +378,7 @@ if "last_result" in st.session_state and not st.session_state.payment_confirmed:
                 <li><strong>After payment</strong>, you'll receive email from Razorpay</li>
                 <li><strong>Copy Payment ID</strong> from email (format: <code>pay_xxxxx...</code>)</li>
                 <li><strong>Return here</strong> and paste it below to unlock report</li>
+                <li><strong>Note:</strong> If the page refreshes after payment, simply re-upload your resume. You do not need to pay again. Just copy the payment ID from your confirmation email and enter it to verify</li>
             </ol>
         </div>
         """, unsafe_allow_html=True)
