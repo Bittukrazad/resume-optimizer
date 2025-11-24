@@ -717,7 +717,7 @@ Key Recommendations:
             )
         
         st.markdown("---")
-        st.info("🎁 **Free ATS Resume Template**: [Download Here](https://1drv.ms/w/c/5ddc74c90972a7d6/EQLepl_zhi9Fr-2eUH0_o9oBVYTRQ4UEbG0q05Twhnl2VQ?e=jlcJuw)")
+        st.info("🎁 **Free ATS Resume Template**: [Download Here](https://drive.google.com/file/d/13WRRtdGnkWKL8VbnGu-PNMeeNNu2mC78/view?usp=sharing)")
 
 # ============================================================
 # ADMIN DASHBOARD
