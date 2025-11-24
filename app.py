@@ -30,10 +30,12 @@ try:
     ADMIN_PASSWORD = st.secrets["admin"]["password"]
     RAZORPAY_KEY = st.secrets["razorpay"]["key_id"]
     RAZORPAY_SECRET = st.secrets["razorpay"]["key_secret"]
+    TEMPLATE_LINK = st.secrets["resources"]["template_link"]
 except:
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
     RAZORPAY_KEY = os.getenv("RAZORPAY_KEY_ID", "rzp_test_00000000000000")
     RAZORPAY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+    TEMPLATE_LINK = os.getenv("TEMPLATE_LINK", "#")
 
 
 # Payment tracking to prevent reuse
@@ -718,8 +720,10 @@ Key Recommendations:
             )
         
         st.markdown("---")
-        st.info("🎁 **Free ATS Resume Template**: [Download Here](https://drive.google.com/file/d/13WRRtdGnkWKL8VbnGu-PNMeeNNu2mC78/view?usp=sharing)")
-
+        if TEMPLATE_LINK != "#":
+            st.info(f"🎁 **Free ATS Resume Template**: [Download Here]({TEMPLATE_LINK})")
+        else:
+            st.info("🎁 **Free ATS Resume Template**: Contact support for link")
 # ============================================================
 # ADMIN DASHBOARD
 # ============================================================
