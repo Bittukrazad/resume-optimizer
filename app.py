@@ -1,3 +1,12 @@
+
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Google Search Console Verification
+components.html("""
+    <meta name="google-site-verification" content="OvN_2QGPT9MZspqC0SCfJQJ2InyQbXCZWQoUPeYk7ao" />
+""", height=0)
+
 # Pre-download model during build
 import os
 from sentence_transformers import SentenceTransformer
@@ -20,12 +29,6 @@ from utils import extract_text_from_pdf, extract_text_from_docx, validate_resume
 from resume_analyzer import analyze_resume
 from report_generator import generate_pdf_report
 import razorpay
-
-
-# Google Search Console Verification
-st.markdown("""
-   <meta name="google-site-verification" content="OvN_2QGPT9MZspqC0SCfJQJ2InyQbXCZWQoUPeYk7ao" />
-""", unsafe_allow_html=True)
 
 
 # ============================================================
