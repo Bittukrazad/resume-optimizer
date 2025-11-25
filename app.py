@@ -1,13 +1,3 @@
-import streamlit as st
-import streamlit.web.server.routes as routes
-
-# GOOGLE VERIFICATION FILE
-def google_verification_handler(path):
-    if path == "/googled5b7c472464664c4.html":
-        return "google-site-verification: googled5b7c472464664c4.html"
-    return None
-
-routes.CustomFileHandler._get_file = google_verification_handler
 
 # Pre-download model during build
 import os
