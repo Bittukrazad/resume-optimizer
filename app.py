@@ -21,6 +21,13 @@ from resume_analyzer import analyze_resume
 from report_generator import generate_pdf_report
 import razorpay
 
+
+# Google Search Console Verification
+st.markdown("""
+   <meta name="google-site-verification" content="OvN_2QGPT9MZspqC0SCfJQJ2InyQbXCZWQoUPeYk7ao" />
+""", unsafe_allow_html=True)
+
+
 # ============================================================
 # CONFIGURATION & SECURITY
 # ============================================================
