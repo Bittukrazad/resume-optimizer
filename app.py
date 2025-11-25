@@ -1,11 +1,11 @@
-
 import streamlit as st
-import streamlit.components.v1 as components
 
-# Google Search Console Verification
-components.html("""
-    <meta name="google-site-verification" content="OvN_2QGPT9MZspqC0SCfJQJ2InyQbXCZWQoUPeYk7ao" />
-""", height=0)
+# Serve Google verification file
+QUERY = st.query_params
+
+if "google-site-verification" in QUERY:
+    st.write("google-site-verification: googled5b7c472464664c4.html")
+    st.stop()
 
 # Pre-download model during build
 import os
