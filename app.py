@@ -3,8 +3,8 @@ import streamlit.web.server.browser_websocket_handler as bwh
 
 # Google Search Console - Serve verification file
 def serve_google_file(path):
-    if path == "/ googled5b7c472464664c4.html":
-        return "google-site-verification:  googled5b7c472464664c4.html"
+    if path == "/googled5b7c472464664c4.html":
+        return "google-site-verification: googled5b7c472464664c4.html"
     return None
 
 bwh._get_static_file_content = serve_google_file
