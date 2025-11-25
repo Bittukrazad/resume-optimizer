@@ -1,14 +1,13 @@
 import streamlit as st
-import streamlit.web.server.browser_websocket_handler as bwh
+import streamlit.web.server.routes as routes
 
-# Google Search Console - Serve verification file
-def serve_google_file(path):
+# GOOGLE VERIFICATION FILE
+def google_verification_handler(path):
     if path == "/googled5b7c472464664c4.html":
         return "google-site-verification: googled5b7c472464664c4.html"
     return None
 
-bwh._get_static_file_content = serve_google_file
-
+routes.CustomFileHandler._get_file = google_verification_handler
 
 # Pre-download model during build
 import os
